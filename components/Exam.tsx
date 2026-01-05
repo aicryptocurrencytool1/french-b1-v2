@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getComprehensiveExamData, playAudio, getWritingExample } from '../services/geminiService';
+import { getComprehensiveExamData, playAudio, getWritingExample, resumeAudioContext } from '../services/geminiService';
 import { QuizQuestion, Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { Loader2, FileText, CheckCircle2, XCircle, Headphones, BookOpen, PenSquare, Mic, PlayCircle, Trophy, ArrowRight, Wand2 } from 'lucide-react';
@@ -46,11 +46,11 @@ const FormattedContent: React.FC<{ text: string }> = ({ text }) => {
 type ExamState = 'intro' | 'generating' | 'listening' | 'reading' | 'writing' | 'speaking' | 'results';
 
 interface ExamData {
-  listening: { text: string; questions: QuizQuestion[]; audio: string; };
-  reading: { text: string; questions: QuizQuestion[]; };
-  writing: { feedback: string; userText: string; prompt: string; };
-  speaking: { continuousPrompt: string; interactionPrompt: string; };
-  scores: { listening: number; reading: number; };
+    listening: { text: string; questions: QuizQuestion[]; audio: string; };
+    reading: { text: string; questions: QuizQuestion[]; };
+    writing: { feedback: string; userText: string; prompt: string; };
+    speaking: { continuousPrompt: string; interactionPrompt: string; };
+    scores: { listening: number; reading: number; };
 }
 
 const Exam: React.FC<{ language: Language }> = ({ language }) => {
@@ -83,7 +83,7 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
         if (section === 'listening') setExamState('reading');
         if (section === 'reading') setExamState('writing');
     };
-    
+
     const handleWritingComplete = (feedback: string, userText: string) => {
         setExamData(prev => ({ ...prev, writing: { ...prev.writing!, feedback, userText } }));
         setExamState('speaking');
@@ -103,7 +103,7 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
                 <ul className="space-y-2">
                     {[t('exam.part1'), t('exam.part2'), t('exam.part3'), t('exam.part4')].map((part, i) => (
                         <li key={i} className="flex items-center space-x-3 text-slate-600">
-                            <span className="w-5 h-5 flex items-center justify-center bg-indigo-200 text-indigo-700 rounded-full text-xs font-bold">{i+1}</span>
+                            <span className="w-5 h-5 flex items-center justify-center bg-indigo-200 text-indigo-700 rounded-full text-xs font-bold">{i + 1}</span>
                             <span>{part}</span>
                         </li>
                     ))}
@@ -118,12 +118,12 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
             {error && <p className="text-red-500 p-4 bg-red-50 rounded-lg">{error}</p>}
         </div>
     );
-    
+
     if (examState === 'intro') return <ExamIntro />;
     if (examState === 'generating') return <LoadingScreen text={t('exam.loading')} />;
 
     if (examState === 'listening' && examData.listening) {
-        return <QuizSection 
+        return <QuizSection
             key="listening"
             language={language}
             title={t('exam.listeningTitle')}
@@ -134,7 +134,7 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
             icon={Headphones}
         />
     }
-    
+
     if (examState === 'reading' && examData.reading) {
         return <QuizSection
             key="reading"
@@ -147,18 +147,18 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
             icon={BookOpen}
         />
     }
-    
+
     if (examState === 'writing' && examData.writing) {
-        return <WritingSection 
+        return <WritingSection
             language={language}
             prompt={examData.writing.prompt}
             onComplete={handleWritingComplete}
             t={t}
         />
     }
-    
+
     if (examState === 'speaking' && examData.speaking) {
-        return <SpeakingSection 
+        return <SpeakingSection
             language={language}
             continuousPrompt={examData.speaking.continuousPrompt}
             interactionPrompt={examData.speaking.interactionPrompt}
@@ -166,11 +166,11 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
             t={t}
         />
     }
-    
-     if (examState === 'results') {
-        return <ResultsScreen 
-            examData={examData} 
-            t={t} 
+
+    if (examState === 'results') {
+        return <ResultsScreen
+            examData={examData}
+            t={t}
             onRetake={() => setExamState('intro')}
         />
     }
@@ -188,16 +188,16 @@ const LoadingScreen: React.FC<{ text: string }> = ({ text }) => (
     </div>
 );
 
-const AudioPlayer: React.FC<{audioBase64: string, t: (k:string) => string}> = ({ audioBase64, t }) => {
+const AudioPlayer: React.FC<{ audioBase64: string, t: (k: string) => string }> = ({ audioBase64, t }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     return (
         <div className="flex justify-center">
             <button
-                onClick={async () => { setIsPlaying(true); await playAudio(audioBase64); setIsPlaying(false); }}
+                onClick={async () => { resumeAudioContext(); setIsPlaying(true); await playAudio(audioBase64); setIsPlaying(false); }}
                 disabled={isPlaying}
                 className="flex items-center space-x-3 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30 disabled:opacity-60"
             >
-                {isPlaying ? <Loader2 className="animate-spin" size={24}/> : <PlayCircle size={24} />}
+                {isPlaying ? <Loader2 className="animate-spin" size={24} /> : <PlayCircle size={24} />}
                 <span className="font-bold">{t('exam.listen')}</span>
             </button>
         </div>
@@ -227,7 +227,7 @@ const QuizSection: React.FC<{
             setScore(s => s + 1);
         }
     };
-    
+
     const next = () => {
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(p => p + 1);
@@ -237,13 +237,13 @@ const QuizSection: React.FC<{
             onComplete(score);
         }
     };
-    
+
     const currentQ = questions[currentQuestionIndex];
 
     return (
         <div className="max-w-3xl mx-auto flex flex-col h-full justify-center animate-in fade-in">
             <div className="text-center mb-8 space-y-3">
-                 <div className="inline-block bg-blue-100 text-blue-600 p-4 rounded-full">
+                <div className="inline-block bg-blue-100 text-blue-600 p-4 rounded-full">
                     <Icon size={32} />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800 font-heading">{title}</h2>
@@ -251,7 +251,7 @@ const QuizSection: React.FC<{
             </div>
 
             {headerContent}
-            
+
             <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 mt-8">
                 <p className="text-sm font-bold text-slate-500 mb-4">{t('exercises.question', { current: (currentQuestionIndex + 1).toString(), total: questions.length.toString() })}</p>
                 <p className="text-lg font-semibold text-slate-800 mb-6 text-center leading-relaxed">{currentQ.question}</p>
@@ -322,18 +322,18 @@ const WritingSection: React.FC<{
     return (
         <div className="max-w-3xl mx-auto h-full flex flex-col justify-center animate-in fade-in">
             <div className="text-center mb-8 space-y-3">
-                 <div className="inline-block bg-green-100 text-green-600 p-4 rounded-full">
+                <div className="inline-block bg-green-100 text-green-600 p-4 rounded-full">
                     <PenSquare size={32} />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800 font-heading">{t('exam.writingTitle')}</h2>
                 <p className="text-slate-500">{t('exam.writingInstructions')}</p>
             </div>
-            
+
             <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-100">
                 <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-4">
                     <p className="font-semibold text-slate-700">{prompt}</p>
                 </div>
-                <textarea 
+                <textarea
                     value={userText}
                     onChange={(e) => setUserText(e.target.value)}
                     rows={8}
@@ -343,27 +343,27 @@ const WritingSection: React.FC<{
                 />
                 {!feedback && !modelAnswer && (
                     <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                        <button 
-                            onClick={handleAnalyze} 
+                        <button
+                            onClick={handleAnalyze}
                             disabled={loading || !userText.trim()}
                             className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors shadow-lg shadow-green-500/30 flex justify-center items-center gap-2"
                         >
-                            {loading ? <><Loader2 className="animate-spin" size={20}/> {t('exam.analyzing')}</> : t('exam.submitAndAnalyze')}
+                            {loading ? <><Loader2 className="animate-spin" size={20} /> {t('exam.analyzing')}</> : t('exam.submitAndAnalyze')}
                         </button>
                         <button
                             onClick={handleShowModel}
                             disabled={loading || loadingModel || !!userText.trim()}
                             className="flex-1 sm:flex-auto py-3 px-6 bg-slate-600 text-white font-bold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors flex justify-center items-center gap-2"
                         >
-                             {loadingModel ? <Loader2 className="animate-spin" size={20}/> : <Wand2 size={20}/>}
-                             {t('examStudy.showExample')}
+                            {loadingModel ? <Loader2 className="animate-spin" size={20} /> : <Wand2 size={20} />}
+                            {t('examStudy.showExample')}
                         </button>
                     </div>
                 )}
             </div>
 
             {modelAnswer && (
-                 <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 mt-8 animate-in fade-in">
+                <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 mt-8 animate-in fade-in">
                     <h3 className="text-xl font-bold font-heading mb-4 text-slate-800">{t('examStudy.modelAnswer')}</h3>
                     <div className="text-slate-800 leading-loose bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6 prose max-w-none">
                         {renderInlineFormatting(modelAnswer.modelAnswer)}
@@ -373,7 +373,7 @@ const WritingSection: React.FC<{
                     <div className="p-1">
                         <FormattedContent text={modelAnswer.analysis} />
                     </div>
-                    
+
                     <button onClick={() => onComplete('', '')} className="mt-6 w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
                         {t('exam.nextSection')}
                     </button>
@@ -399,13 +399,13 @@ const SpeakingSection: React.FC<{
     continuousPrompt: string,
     interactionPrompt: string,
     onComplete: () => void,
-    t: (k:string) => string
+    t: (k: string) => string
 }> = ({ language, continuousPrompt, interactionPrompt, onComplete, t }) => {
     const [isRecording, setIsRecording] = useState(false);
     const [example, setExample] = useState<{ text: string; audio: string } | null>(null);
     const [loadingExample, setLoadingExample] = useState(false);
     const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-    
+
     useEffect(() => {
         navigator.mediaDevices.getUserMedia({ audio: true }).catch(err => {
             console.warn("Microphone permission denied.");
@@ -420,24 +420,24 @@ const SpeakingSection: React.FC<{
         setExample(res);
         setLoadingExample(false);
     };
-    
+
     const handlePlayAudio = async () => {
         if (!example || isAudioPlaying) return;
         setIsAudioPlaying(true);
         await playAudio(example.audio);
         setIsAudioPlaying(false);
     };
-    
+
     return (
         <div className="max-w-3xl mx-auto h-full flex flex-col justify-center animate-in fade-in">
-             <div className="text-center mb-8 space-y-3">
-                 <div className="inline-block bg-rose-100 text-rose-600 p-4 rounded-full">
+            <div className="text-center mb-8 space-y-3">
+                <div className="inline-block bg-rose-100 text-rose-600 p-4 rounded-full">
                     <Mic size={32} />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800 font-heading">{t('exam.speakingTitle')}</h2>
                 <p className="text-slate-500">{t('exam.speakingInstructions')}</p>
             </div>
-            
+
             <div className="space-y-6">
                 <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
                     <h3 className="font-bold text-lg font-heading text-slate-800">{t('exam.speakingContinuousTitle')}</h3>
@@ -448,21 +448,21 @@ const SpeakingSection: React.FC<{
                     <p className="text-slate-600 mt-2 mb-4">{interactionPrompt}</p>
                 </div>
             </div>
-            
+
             <div className="mt-8 text-center flex flex-col sm:flex-row justify-center items-center gap-4">
-                 <button 
+                <button
                     onClick={handleRecordToggle}
                     className={`px-8 py-3 font-bold rounded-xl text-white shadow-lg transition-colors flex items-center gap-3 ${isRecording ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/30'}`}
-                 >
+                >
                     <Mic size={20} />
                     {isRecording ? t('exam.stopRecording') : t('exam.startRecording')}
-                 </button>
-                 <button 
+                </button>
+                <button
                     onClick={handleGetExample}
                     disabled={loadingExample}
                     className="py-3 px-6 bg-slate-600 text-white font-bold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
                 >
-                    {loadingExample ? <Loader2 className="animate-spin" size={20}/> : <Wand2 size={20}/>}
+                    {loadingExample ? <Loader2 className="animate-spin" size={20} /> : <Wand2 size={20} />}
                     {t('examStudy.showExample')}
                 </button>
             </div>
@@ -472,20 +472,20 @@ const SpeakingSection: React.FC<{
                 <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 animate-in fade-in mt-6">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-bold text-slate-800 font-heading">{t('examStudy.modelAnswer')}</h3>
-                        <button 
-                            onClick={handlePlayAudio}
+                        <button
+                            onClick={() => { resumeAudioContext(); handlePlayAudio(); }}
                             disabled={isAudioPlaying}
                             className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
                         >
                             {isAudioPlaying ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
-                             {t('examStudy.listenToExample')}
+                            {t('examStudy.listenToExample')}
                         </button>
                     </div>
                     <p className="text-slate-700 leading-relaxed italic bg-slate-50 p-4 rounded-lg border">{example.text}</p>
                 </div>
             )}
 
-             <button onClick={onComplete} className="mt-8 w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
+            <button onClick={onComplete} className="mt-8 w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
                 {t('exam.finishExam')}
             </button>
         </div>
@@ -494,7 +494,7 @@ const SpeakingSection: React.FC<{
 
 const ResultsScreen: React.FC<{
     examData: Partial<ExamData>,
-    t: (k:string) => string,
+    t: (k: string) => string,
     onRetake: () => void
 }> = ({ examData, t, onRetake }) => {
     const { scores, writing, listening, reading } = examData;
@@ -502,14 +502,14 @@ const ResultsScreen: React.FC<{
     const totalScore = (scores?.listening || 0) + (scores?.reading || 0);
     return (
         <div className="max-w-3xl mx-auto py-12 animate-in fade-in">
-             <div className="text-center mb-8 space-y-3">
-                 <div className="inline-block bg-amber-100 text-amber-600 p-4 rounded-full">
+            <div className="text-center mb-8 space-y-3">
+                <div className="inline-block bg-amber-100 text-amber-600 p-4 rounded-full">
                     <Trophy size={32} />
                 </div>
                 <h2 className="text-3xl font-bold text-slate-800 font-heading">{t('exam.resultsTitle')}</h2>
                 <p className="text-slate-500">{t('exam.resultsSummary')}</p>
             </div>
-            
+
             <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 space-y-6">
                 <div>
                     <h3 className="text-xl font-bold font-heading text-slate-800">Score</h3>
@@ -519,20 +519,20 @@ const ResultsScreen: React.FC<{
                         <span>{t('exam.part2')}: <span className="font-bold">{scores?.reading} / {reading?.questions.length}</span></span>
                     </div>
                 </div>
-                
+
                 <div className="pt-6 border-t border-slate-200">
-                     <h3 className="text-xl font-bold font-heading text-slate-800 mb-4">{t('exam.writingTitle')}</h3>
-                     <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-4">
+                    <h3 className="text-xl font-bold font-heading text-slate-800 mb-4">{t('exam.writingTitle')}</h3>
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl mb-4">
                         <p className="font-semibold text-slate-600 italic">"{writing?.userText}"</p>
                     </div>
                     <h4 className="font-bold font-heading text-slate-700">{t('exam.feedbackTitle')}</h4>
-                     <div className="mt-2">
+                    <div className="mt-2">
                         <FormattedContent text={writing?.feedback || ""} />
-                     </div>
+                    </div>
                 </div>
             </div>
             <div className="text-center mt-8">
-                 <button onClick={onRetake} className="px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition-transform active:scale-95">
+                <button onClick={onRetake} className="px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition-transform active:scale-95">
                     {t('exam.retakeExam')}
                 </button>
             </div>

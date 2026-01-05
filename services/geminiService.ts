@@ -20,54 +20,59 @@ const parseGeminiJson = <T>(text: string | undefined): T => {
     if (match && match[1]) {
         cleanedText = match[1];
     }
-    
+
     cleanedText = cleanedText.trim();
     return JSON.parse(cleanedText) as T;
 };
 
 
 function decode(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
 }
 
 async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
+    data: Uint8Array,
+    ctx: AudioContext,
+    sampleRate: number,
+    numChannels: number,
 ): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+    const dataInt16 = new Int16Array(data.buffer);
+    const frameCount = dataInt16.length / numChannels;
+    const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+    for (let channel = 0; channel < numChannels; channel++) {
+        const channelData = buffer.getChannelData(channel);
+        for (let i = 0; i < frameCount; i++) {
+            channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+        }
     }
-  }
-  return buffer;
+    return buffer;
 }
 
 // Initialize AudioContext once. It will likely start in a "suspended" state on mobile.
 const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
 
+export const resumeAudioContext = async () => {
+    if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+    }
+};
+
 export const playAudio = async (base64Audio: string) => {
     if (!base64Audio) {
-      console.error("playAudio called with empty or invalid audio data.");
-      return;
+        console.error("playAudio called with empty or invalid audio data.");
+        return;
     }
     try {
         // On mobile, the AudioContext must be resumed by a user gesture.
-        if (audioContext.state === 'suspended') {
-            await audioContext.resume();
-        }
+        // On mobile, the AudioContext must be resumed by a user gesture.
+        await resumeAudioContext();
 
         const audioBuffer = await decodeAudioData(
             decode(base64Audio),
@@ -116,105 +121,105 @@ export const getSpeech = async (text: string): Promise<string> => {
 };
 
 export const getGrammarExplanation = async (topicTitle: string, language: Language): Promise<string> => {
-  const cachedData = await dbService.getGrammar(topicTitle, language);
-  if (cachedData) return cachedData;
+    const cachedData = await dbService.getGrammar(topicTitle, language);
+    if (cachedData) return cachedData;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: `Explain the French B1 grammar topic: "${topicTitle}". 
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Explain the French B1 grammar topic: "${topicTitle}". 
       Provide the explanation in ${language} language.
       Structure the response with clear headings, bullet points, and plenty of examples.
       Focus on usage, formation, and common mistakes.
       Format the entire response using simple Markdown. Use ## for headings, * for bullet points, and ** for important words. Do not use any other Markdown features like blockquotes or code blocks.
       Ensure examples are marked. Use a double newline to separate paragraphs.`,
-    });
-    const explanationText = response.text || "Sorry, I couldn't generate an explanation at this time.";
-    await dbService.setGrammar(topicTitle, language, explanationText);
-    return explanationText;
-  } catch (error) {
-    console.error("Error fetching grammar:", error);
-    return "Error connecting to AI service. Please check your API key.";
-  }
+        });
+        const explanationText = response.text || "Sorry, I couldn't generate an explanation at this time.";
+        await dbService.setGrammar(topicTitle, language, explanationText);
+        return explanationText;
+    } catch (error) {
+        console.error("Error fetching grammar:", error);
+        return "Error connecting to AI service. Please check your API key.";
+    }
 };
 
 export const getVerbConjugation = async (verb: string, language: Language): Promise<VerbConjugation> => {
-  const cachedData = await dbService.getVerb(verb, language);
-  if (cachedData) return cachedData;
+    const cachedData = await dbService.getVerb(verb, language);
+    if (cachedData) return cachedData;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: `Conjugate the French verb "${verb}" for a B1 student. 
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Conjugate the French verb "${verb}" for a B1 student. 
       Provide the translation in ${language}.
       Return JSON.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            verb: { type: Type.STRING },
-            translation: { type: Type.STRING, description: `Translation in ${language}` },
-            tenses: {
-              type: Type.OBJECT,
-              properties: {
-                present: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Je, Tu, Il/Elle, Nous, Vous, Ils/Elles" },
-                passeCompose: { type: Type.ARRAY, items: { type: Type.STRING } },
-                imparfait: { type: Type.ARRAY, items: { type: Type.STRING } },
-                futurSimple: { type: Type.ARRAY, items: { type: Type.STRING } },
-                conditionnel: { type: Type.ARRAY, items: { type: Type.STRING } },
-                plusQueParfait: { type: Type.ARRAY, items: { type: Type.STRING } },
-                subjonctifPresent: { type: Type.ARRAY, items: { type: Type.STRING } },
-              },
-              required: ["present", "passeCompose", "imparfait", "futurSimple", "conditionnel", "plusQueParfait", "subjonctifPresent"]
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        verb: { type: Type.STRING },
+                        translation: { type: Type.STRING, description: `Translation in ${language}` },
+                        tenses: {
+                            type: Type.OBJECT,
+                            properties: {
+                                present: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Je, Tu, Il/Elle, Nous, Vous, Ils/Elles" },
+                                passeCompose: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                imparfait: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                futurSimple: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                conditionnel: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                plusQueParfait: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                subjonctifPresent: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            },
+                            required: ["present", "passeCompose", "imparfait", "futurSimple", "conditionnel", "plusQueParfait", "subjonctifPresent"]
+                        }
+                    },
+                    required: ["verb", "translation", "tenses"]
+                }
             }
-          },
-          required: ["verb", "translation", "tenses"]
-        }
-      }
-    });
-    
-    const conjugationData = parseGeminiJson<VerbConjugation>(response.text);
-    await dbService.setVerb(verb, language, conjugationData);
-    return conjugationData;
-  } catch (error) {
-    console.error("Error fetching conjugation:", error);
-    throw error;
-  }
+        });
+
+        const conjugationData = parseGeminiJson<VerbConjugation>(response.text);
+        await dbService.setVerb(verb, language, conjugationData);
+        return conjugationData;
+    } catch (error) {
+        console.error("Error fetching conjugation:", error);
+        throw error;
+    }
 };
 
 export const getQuiz = async (topicTitle: string, language: Language): Promise<QuizQuestion[]> => {
-  try {
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: `Generate a JSON array of exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}".
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: `Generate a JSON array of exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}".
       The questions and options must be in French.
       The explanation for the correct answer must be in ${language}.
       Ensure the JSON is valid and complete.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              question: { type: Type.STRING },
-              options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Array of exactly 4 options" },
-              correctAnswerIndex: { type: Type.INTEGER, description: "0-based index of correct option" },
-              explanation: { type: Type.STRING, description: `Short explanation in ${language} of why it is correct` }
-            },
-            required: ["question", "options", "correctAnswerIndex", "explanation"]
-          }
-        }
-      }
-    });
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            question: { type: Type.STRING },
+                            options: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Array of exactly 4 options" },
+                            correctAnswerIndex: { type: Type.INTEGER, description: "0-based index of correct option" },
+                            explanation: { type: Type.STRING, description: `Short explanation in ${language} of why it is correct` }
+                        },
+                        required: ["question", "options", "correctAnswerIndex", "explanation"]
+                    }
+                }
+            }
+        });
 
-    const quizData = parseGeminiJson<QuizQuestion[]>(response.text);
-    return quizData;
-  } catch (error) {
-    console.error("Error generating quiz:", error);
-    return [];
-  }
+        const quizData = parseGeminiJson<QuizQuestion[]>(response.text);
+        return quizData;
+    } catch (error) {
+        console.error("Error generating quiz:", error);
+        return [];
+    }
 };
 
 export const getFlashcards = async (category: string, language: Language): Promise<Flashcard[]> => {
@@ -355,7 +360,7 @@ export const getExamPrompts = async (): Promise<{ writing: string; speakingConti
         const prompts = parseGeminiJson<{ writing: string; speakingContinuous: string; speakingInteraction: string; }>(response.text);
         return prompts;
 
-    } catch(e) {
+    } catch (e) {
         console.error("Error generating exam prompts", e);
         // Provide some fallback prompts in case of API error
         return {
@@ -478,10 +483,10 @@ export const getComprehensiveExamData = async (language: Language) => {
 
         // Fetch audio for the listening text
         examData.listening.audio = await getSpeech(examData.listening.text);
-        
+
         return examData;
 
-    } catch(e) {
+    } catch (e) {
         console.error("Error generating comprehensive exam data", e);
         throw new Error("Failed to generate the exam based on the syllabus.");
     }
