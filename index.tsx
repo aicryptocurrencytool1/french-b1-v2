@@ -8,6 +8,9 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
+console.log("VERSION: FIXED_BUILD_v2");
+console.log("API KEY LOADED:", process.env.API_KEY ? "YES (Length: " + process.env.API_KEY.length + ")" : "NO");
+
 root.render(
   <React.StrictMode>
     <App />
