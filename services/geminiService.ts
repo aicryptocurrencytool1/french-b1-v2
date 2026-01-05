@@ -55,10 +55,13 @@ async function decodeAudioData(
     return buffer;
 }
 
-// Initialize AudioContext once. It will likely start in a "suspended" state on mobile.
-const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+// Initialize AudioContext lazily.
+let audioContext: AudioContext | null = null;
 
 export const resumeAudioContext = async () => {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    }
     if (audioContext.state === 'suspended') {
         await audioContext.resume();
     }
@@ -73,6 +76,11 @@ export const playAudio = async (base64Audio: string) => {
         // On mobile, the AudioContext must be resumed by a user gesture.
         // On mobile, the AudioContext must be resumed by a user gesture.
         await resumeAudioContext();
+
+        if (!audioContext) {
+            console.error("AudioContext not initialized");
+            return;
+        }
 
         const audioBuffer = await decodeAudioData(
             decode(base64Audio),
