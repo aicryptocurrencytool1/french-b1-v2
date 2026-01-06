@@ -136,7 +136,7 @@ const WritingPractice: React.FC<{ prompt: string; language: Language; t: (k: str
                     <p className="text-slate-600">{prompt}</p>
                 </div>
             </div>
-            
+
             <textarea
                 value={userText}
                 onChange={(e) => setUserText(e.target.value)}
@@ -154,7 +154,7 @@ const WritingPractice: React.FC<{ prompt: string; language: Language; t: (k: str
                     {loading ? <Loader2 className="animate-spin" /> : <Wand2 size={18} />}
                     {t('examStudy.getFeedback')}
                 </button>
-                 <button
+                <button
                     onClick={handleShowExample}
                     disabled={loading || loadingModelOnly || !!userText.trim()}
                     className="flex-1 sm:flex-auto py-3 px-6 bg-slate-600 text-white font-bold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors flex justify-center items-center"
@@ -166,7 +166,7 @@ const WritingPractice: React.FC<{ prompt: string; language: Language; t: (k: str
             {result && (
                 <div className="mt-6 space-y-6 pt-6 border-t border-slate-200 animate-in fade-in">
                     {result.feedback && !showModel && (
-                         <div>
+                        <div>
                             <h4 className="font-bold text-lg font-heading text-slate-800 mb-2">{t('examStudy.feedback')}</h4>
                             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
                                 <FormattedContent text={result.feedback} />
@@ -176,8 +176,8 @@ const WritingPractice: React.FC<{ prompt: string; language: Language; t: (k: str
                     {result.model && (
                         <div>
                             <h4 className="font-bold text-lg font-heading text-slate-800 mb-2">{t('examStudy.modelAnswer')}</h4>
-                             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 italic">
-                                {result.model}
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 italic">
+                                {renderInlineFormatting(result.model)}
                             </div>
                         </div>
                     )}
@@ -199,7 +199,7 @@ const SpeakingPractice: React.FC<{ prompt: string; language: Language; t: (k: st
         setExample(res);
         setLoading(false);
     }
-    
+
     const handlePlayAudio = async () => {
         if (!example?.audio || isPlaying) return;
         setIsPlaying(true);
@@ -209,7 +209,7 @@ const SpeakingPractice: React.FC<{ prompt: string; language: Language; t: (k: st
 
     return (
         <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-200">
-             <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
                     <Mic size={24} />
                 </div>
@@ -218,9 +218,9 @@ const SpeakingPractice: React.FC<{ prompt: string; language: Language; t: (k: st
                     <p className="text-slate-600">{prompt}</p>
                 </div>
             </div>
-            
+
             <div className="mt-4">
-                 <button
+                <button
                     onClick={handleGetExample}
                     disabled={loading}
                     className="w-full py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 disabled:opacity-50 transition-colors flex justify-center items-center gap-2"
@@ -237,14 +237,14 @@ const SpeakingPractice: React.FC<{ prompt: string; language: Language; t: (k: st
                         <button
                             onClick={handlePlayAudio}
                             disabled={isPlaying}
-                             className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                            className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
                         >
-                            {isPlaying ? <Loader2 size={16} className="animate-spin"/> : <PlayCircle size={16}/> }
+                            {isPlaying ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
                             {t('examStudy.listenToExample')}
                         </button>
                     </div>
-                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 italic">
-                        {example.text}
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 italic">
+                        {renderInlineFormatting(example.text)}
                     </div>
                 </div>
             )}

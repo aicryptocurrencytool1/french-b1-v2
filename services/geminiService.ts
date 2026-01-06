@@ -332,7 +332,7 @@ export const getDailyPhrases = async (topic: string, tense: string, language: La
 // --- NEW COMPREHENSIVE EXAM GENERATION ---
 export const getExamPrompts = async (): Promise<{ writing: string; speakingContinuous: string; speakingInteraction: string; }> => {
     const prompt = `
-    Générez 3 sujets d'examen de français niveau B1 basés sur le syllabus suivant. Le vocabulaire doit être de niveau A2-B1. Retournez un seul objet JSON valide.
+    Générez 3 sujets d'examen de français niveau B1 basés sur le syllabus suivant. Le vocabulaire doit être STRICTEMENT de niveau A2-B1 (simple et courant). Retournez un seul objet JSON valide.
 
     **Syllabus:**
     - **Thèmes:** Logement, quartier, enfance, projets futurs, expériences personnelles.
@@ -381,7 +381,7 @@ export const getExamPrompts = async (): Promise<{ writing: string; speakingConti
 
 export const getComprehensiveExamData = async (language: Language) => {
     const prompt = `
-    Créez un examen complet de français niveau B1, en respectant scrupuleusement le syllabus fourni. Le vocabulaire doit être adapté au niveau A2-B1. Retournez un seul objet JSON valide.
+    Créez un examen complet de français niveau B1, en respectant scrupuleusement le syllabus fourni. Le vocabulaire doit être STRICTEMENT adapté au niveau A2-B1 (mots fréquents et simples). Retournez un seul objet JSON valide.
 
     **Syllabus Clés:**
     1.  **Thèmes:** Logement, quartier, enfance, projets futurs, expériences personnelles.
@@ -526,7 +526,7 @@ export const getWritingExample = async (prompt: string): Promise<{ modelAnswer: 
         const response = await ai.models.generateContent({
             model: modelName,
             contents: `Pour la consigne de niveau B1 suivante: "${prompt}", générez un objet JSON contenant:
-            1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Incluez des ** pour mettre en évidence les mots grammaticaux clés.
+            1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Utilisez un vocabulaire simple et courant (niveau A2-B1). Incluez des ** pour mettre en évidence les mots grammaticaux clés.
             2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1 (utilisation des temps, vocabulaire, connecteurs). Formatez l'analyse en Markdown simple avec des titres (##) et des listes (*).`,
             config: {
                 responseMimeType: "application/json",
@@ -553,7 +553,7 @@ export const getSpeakingExample = async (prompt: string, language: Language): Pr
     try {
         const textResponse = await ai.models.generateContent({
             model: modelName,
-            contents: `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${prompt}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire pertinents pour le niveau B1.`,
+            contents: `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${prompt}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1.`,
         });
         const text = textResponse.text || "Je ne sais pas quoi dire pour le moment.";
         const audio = await getSpeech(text);
