@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { Headphones, BookOpen, PenSquare, Mic, CheckCircle, ArrowRight, Loader2, PlayCircle } from 'lucide-react';
-import { getSpeech, resumeAudioContext, decode, playAudio } from '../services/geminiService';
+import { Headphones, BookOpen, PenSquare, Mic, CheckCircle, ArrowRight, Loader2, PlayCircle, Eye, EyeOff } from 'lucide-react';
+import { getSpeech, resumeAudioContext, playAudio } from '../services/geminiService';
 
 interface ExamenBlancProps {
     language: Language;
@@ -57,6 +57,12 @@ const AudioPlayer: React.FC<{ text: string }> = ({ text }) => {
 const ExamenBlanc: React.FC<ExamenBlancProps> = ({ language }) => {
     const { t } = useTranslation(language);
     const [currentSection, setCurrentSection] = useState(0);
+    const [showAnswers, setShowAnswers] = useState(false);
+    const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+
+    const handleInputChange = (key: string, value: string) => {
+        setUserAnswers(prev => ({ ...prev, [key]: value }));
+    };
 
     // Hardcoded Content
     const listeningDialogue = `Clara : Salut Lucas ! Ça fait longtemps, comment vas-tu ?
@@ -80,15 +86,31 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                     <p className="text-slate-600 mb-4">Écoutez le dialogue suivant :</p>
                     <AudioPlayer text={listeningDialogue} />
 
-                    <div className="space-y-4 mt-8">
+                    <div className="space-y-6 mt-8">
                         <h4 className="font-bold text-lg">Questions :</h4>
-                        <ul className="list-decimal pl-5 space-y-4 text-slate-700">
-                            <li>Où Lucas est-il allé pendant ses vacances ? (1 point)</li>
-                            <li>Quand est-il parti ? (1 point)</li>
-                            <li>Pourquoi n'a-t-il pas vu tous les musées ? (1 point)</li>
-                            <li>Où ira-t-il l'année prochaine s'il a assez d'argent ? (1 point)</li>
-                            <li>Quel est le projet de Clara ? (1 point)</li>
-                        </ul>
+                        {[
+                            { q: "Où Lucas est-il allé pendant ses vacances ?", a: "Il est allé en Espagne (il a visité Barcelone)." },
+                            { q: "Quand est-il parti ?", a: "Il est parti le 15 août." },
+                            { q: "Pourquoi n'a-t-il pas vu tous les musées ?", a: "Car ils étaient complets (il y avait beaucoup de monde)." },
+                            { q: "Où ira-t-il l'année prochaine s'il a assez d'argent ?", a: "Il ira en Italie (voir Rome)." },
+                            { q: "Quel est le projet de Clara ?", a: "Elle va déménager (elle cherche un appartement)." }
+                        ].map((item, i) => (
+                            <div key={i} className="space-y-2">
+                                <label className="block text-slate-700 font-medium">{i + 1}. {item.q} (1 point)</label>
+                                <input
+                                    type="text"
+                                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Votre réponse..."
+                                    value={userAnswers[`listening_${i}`] || ''}
+                                    onChange={(e) => handleInputChange(`listening_${i}`, e.target.value)}
+                                />
+                                {showAnswers && (
+                                    <div className="bg-green-50 text-green-800 p-3 rounded-lg text-sm border border-green-200 mt-2">
+                                        <strong>Réponse:</strong> {item.a}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </div>
             )
@@ -101,22 +123,56 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                     <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl leading-relaxed whitespace-pre-line text-slate-800">
                         {readingText}
                     </div>
-                    <div className="space-y-4 mt-8">
+                    <div className="space-y-6 mt-8">
                         <h4 className="font-bold text-lg">Questions :</h4>
-                        <ul className="list-decimal pl-5 space-y-2 text-slate-700">
-                            <li>Où allait la personne chaque été ? (1 point)</li>
-                            <li>Qu'est-ce que sa grand-mère préparait le matin ? (1 point)</li>
-                            <li>Que faisaient-ils l'après-midi ? (2 points)</li>
-                            <li>Pourquoi a-t-elle été triste un jour ? (1 point)</li>
-                        </ul>
-                        <h4 className="font-bold text-lg mt-4">Vrai ou Faux ? (5 points)</h4>
-                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                            <li>a. Elle habitait en ville quand elle était petite.</li>
-                            <li>b. Son grand-père lui a acheté un nouveau seau.</li>
-                            <li>c. Elle détestait ces vacances.</li>
-                            <li>d. Elle se réveillait tard le matin.</li>
-                            <li>e. Elle allait à la montagne.</li>
-                        </ul>
+                        {[
+                            { q: "Où allait la personne chaque été ?", a: "Elle allait chez ses grands-parents à la mer." },
+                            { q: "Qu'est-ce que sa grand-mère préparait le matin ?", a: "Elle préparait des crêpes." },
+                            { q: "Que faisaient-ils l'après-midi ?", a: "Ils allaient à la plage et jouaient (châteaux de sable)." },
+                            { q: "Pourquoi a-t-elle été triste un jour ?", a: "Parce qu'elle a perdu son seau rouge." }
+                        ].map((item, i) => (
+                            <div key={i} className="space-y-2">
+                                <label className="block text-slate-700 font-medium">{i + 1}. {item.q}</label>
+                                <input
+                                    type="text"
+                                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Votre réponse..."
+                                    value={userAnswers[`reading_${i}`] || ''}
+                                    onChange={(e) => handleInputChange(`reading_${i}`, e.target.value)}
+                                />
+                                {showAnswers && (
+                                    <div className="bg-green-50 text-green-800 p-3 rounded-lg text-sm border border-green-200 mt-2">
+                                        <strong>Réponse:</strong> {item.a}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+
+                        <h4 className="font-bold text-lg mt-6">Vrai ou Faux ? (5 points)</h4>
+                        {[
+                            { s: "a. Elle habitait en ville quand elle était petite.", a: "Faux (dans un petit village)." },
+                            { s: "b. Son grand-père lui a acheté un nouveau seau.", a: "Vrai." },
+                            { s: "c. Elle détestait ces vacances.", a: "Faux (c'était merveilleux)." },
+                            { s: "d. Elle se réveillait tard le matin.", a: "Faux (elle se réveillait tôt)." },
+                            { s: "e. Elle allait à la montagne.", a: "Faux (à la mer)." }
+                        ].map((item, i) => (
+                            <div key={i} className="space-y-2">
+                                <p className="font-medium text-slate-700">{item.s}</p>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2">
+                                        <input type="radio" name={`tf_${i}`} value="Vrai" onChange={(e) => handleInputChange(`reading_tf_${i}`, e.target.value)} checked={userAnswers[`reading_tf_${i}`] === 'Vrai'} /> Vrai
+                                    </label>
+                                    <label className="flex items-center gap-2">
+                                        <input type="radio" name={`tf_${i}`} value="Faux" onChange={(e) => handleInputChange(`reading_tf_${i}`, e.target.value)} checked={userAnswers[`reading_tf_${i}`] === 'Faux'} /> Faux
+                                    </label>
+                                </div>
+                                {showAnswers && (
+                                    <div className="bg-green-50 text-green-800 p-3 rounded-lg text-sm border border-green-200 mt-2">
+                                        <strong>Correction:</strong> {item.a}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 </div>
             )
@@ -142,6 +198,26 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                             </ul>
                         </div>
                     </div>
+                    <div className="mt-6">
+                        <label className="block text-slate-800 font-bold mb-2">Votre Rédaction:</label>
+                        <textarea
+                            className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-64"
+                            placeholder="Écrivez votre texte ici..."
+                            value={userAnswers[`writing`] || ''}
+                            onChange={(e) => handleInputChange(`writing`, e.target.value)}
+                        ></textarea>
+                        {showAnswers && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4 text-blue-900 text-sm">
+                                <strong>Conseils d'auto-correction :</strong>
+                                <ul className="list-disc pl-5 mt-2 space-y-1">
+                                    <li>Avez-vous respecté la consigne de longueur (100-120 mots) ?</li>
+                                    <li>Avez-vous utilisé correctement les temps du passé (Imparfait pour description / Passé Composé pour actions) ?</li>
+                                    <li>Pour le Sujet B : avez-vous utilisé le vocabulaire du logement et le conditionnel pour les souhaits ?</li>
+                                    <li>Avez-vous fait des phrases complètes avec des connecteurs (d'abord, ensuite, mais, parce que) ?</li>
+                                </ul>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )
         },
@@ -151,22 +227,32 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
             content: (
                 <div className="space-y-6">
                     <p className="text-slate-600">Préparez des réponses aux situations suivantes (vous jouerez les deux rôles mentalement) :</p>
-                    <div className="space-y-4">
-                        <div className="bg-rose-50 p-4 rounded-lg border border-rose-100">
+                    <div className="space-y-6">
+                        <div className="bg-rose-50 p-6 rounded-lg border border-rose-100">
                             <h4 className="font-bold text-rose-800 mb-2">Situation 1 : Discussion Vacances</h4>
-                            <ul className="list-disc pl-5 text-rose-700 space-y-1">
+                            <ul className="list-disc pl-5 text-rose-700 space-y-1 mb-4">
                                 <li>Parlez de l'endroit, de la durée, des activités.</li>
                                 <li>Demandez-lui ce qu'il a fait, lui.</li>
                                 <li>Exprimez un regret sur quelque chose que vous n'avez pas pu faire. (Utilisez « Si seulement j'avais... »)</li>
                             </ul>
+                            {showAnswers && (
+                                <div className="bg-white/50 p-3 rounded-lg text-rose-900 text-sm border border-rose-200">
+                                    <strong>Idées clés :</strong> "Je suis allé à...", "C'était magnifique...", "Et toi ?", "Si seulement j'avais eu plus de temps... / Si seulement il n'avait pas plu..."
+                                </div>
+                            )}
                         </div>
-                        <div className="bg-rose-50 p-4 rounded-lg border border-rose-100">
+                        <div className="bg-rose-50 p-6 rounded-lg border border-rose-100">
                             <h4 className="font-bold text-rose-800 mb-2">Situation 2 : Appel Propriétaire</h4>
-                            <ul className="list-disc pl-5 text-rose-700 space-y-1">
+                            <ul className="list-disc pl-5 text-rose-700 space-y-1 mb-4">
                                 <li>Présentez-vous et demandez des informations (prix, équipements, quartier).</li>
                                 <li>Exprimez un souhait (« J'aimerais... », « Je voudrais... »).</li>
                                 <li>Prenez congé poliment.</li>
                             </ul>
+                            {showAnswers && (
+                                <div className="bg-white/50 p-3 rounded-lg text-rose-900 text-sm border border-rose-200">
+                                    <strong>Idées clés :</strong> "Bonjour, je vous appelle pour l'annonce...", "Est-ce que l'appartement est lumineux ?", "J'aimerais le visiter...", "Merci, bonne journée."
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -186,6 +272,16 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                             <strong>Thème 2:</strong> Décrivez votre quartier idéal. Où est-il ? Qu'est-ce qu'il y a ? Comment sont les voisins ? Pourquoi est-ce votre idéal ? Utilisez le futur simple ou le conditionnel.
                         </li>
                     </ul>
+                    {showAnswers && (
+                        <div className="bg-slate-100 p-4 rounded-lg mt-4 text-slate-700 text-sm">
+                            <strong>Conseils :</strong>
+                            <ul className="list-disc pl-5 mt-1">
+                                <li>Parlez clairement et pas trop vite.</li>
+                                <li><strong>Thème 1 :</strong> Utilisez des adjectifs (organisé, créatif, patient) et le conditionnel (Je voudrais travailler...).</li>
+                                <li><strong>Thème 2 :</strong> Utilisez le vocabulaire de la ville (parc, commerces, calme) et le futur/conditionnel (Il y aurait des arbres, ce serait calme...).</li>
+                            </ul>
+                        </div>
+                    )}
                 </div>
             )
         },
@@ -195,32 +291,80 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
             content: (
                 <div className="space-y-8">
                     <div>
-                        <h4 className="font-bold text-lg mb-2">Mettez les verbes au temps correct (passé composé, imparfait ou plus-que-parfait). (6 points)</h4>
-                        <ol className="list-decimal pl-5 space-y-2 text-slate-700">
-                            <li>Quand je (être) _______ enfant, je (jouer) _______ souvent au foot.</li>
-                            <li>Hier, il (pleuvoir) _______ alors nous (rester) _______ à la maison.</li>
-                            <li>Elle était fatiguée parce qu'elle ne (dormir) _______ pas bien la nuit précédente.</li>
-                        </ol>
+                        <h4 className="font-bold text-lg mb-4">Mettez les verbes au temps correct (passé composé, imparfait ou plus-que-parfait). (6 points)</h4>
+                        {[
+                            { s: "Quand je (être) _______ enfant, je (jouer) _______ souvent au foot.", a: "étais / jouais" },
+                            { s: "Hier, il (pleuvoir) _______ alors nous (rester) _______ à la maison.", a: "a plu (ou pleuvait) / sommes restés" },
+                            { s: "Elle était fatiguée parce qu'elle ne (dormir) _______ pas bien la nuit précédente.", a: "n'avait pas dormi (Plus-que-parfait)" }
+                        ].map((item, i) => (
+                            <div key={i} className="mb-4">
+                                <p className="text-slate-700 mb-1">{i + 1}. {item.s}</p>
+                                <input
+                                    type="text"
+                                    className="w-full p-2 border border-slate-300 rounded focus:border-blue-500"
+                                    placeholder="Réponse..."
+                                    value={userAnswers[`grammar_ex1_${i}`] || ''}
+                                    onChange={(e) => handleInputChange(`grammar_ex1_${i}`, e.target.value)}
+                                />
+                                {showAnswers && <div className="text-green-600 text-sm mt-1 font-medium">Correction: {item.a}</div>}
+                            </div>
+                        ))}
                     </div>
                     <div>
-                        <h4 className="font-bold text-lg mb-2">Complétez avec le futur simple ou le conditionnel présent. (6 points)</h4>
-                        <ol className="list-decimal pl-5 space-y-2 text-slate-700">
-                            <li>Si j'avais plus de temps, je (lire) _______ plus de livres.</li>
-                            <li>L'année prochaine, je (apprendre) _______ à conduire.</li>
-                            <li>Tu (devoir) _______ faire attention, c'est dangereux !</li>
-                        </ol>
+                        <h4 className="font-bold text-lg mb-4">Complétez avec le futur simple ou le conditionnel présent. (6 points)</h4>
+                        {[
+                            { s: "Si j'avais plus de temps, je (lire) _______ plus de livres.", a: "lirais (Conditionnel)" },
+                            { s: "L'année prochaine, je (apprendre) _______ à conduire.", a: "apprendrai (Futur simple)" },
+                            { s: "Tu (devoir) _______ faire attention, c'est dangereux !", a: "devrais (Conditionnel - conseil)" }
+                        ].map((item, i) => (
+                            <div key={i} className="mb-4">
+                                <p className="text-slate-700 mb-1">{i + 1}. {item.s}</p>
+                                <input
+                                    type="text"
+                                    className="w-full p-2 border border-slate-300 rounded focus:border-blue-500"
+                                    placeholder="Réponse..."
+                                    value={userAnswers[`grammar_ex2_${i}`] || ''}
+                                    onChange={(e) => handleInputChange(`grammar_ex2_${i}`, e.target.value)}
+                                />
+                                {showAnswers && <div className="text-green-600 text-sm mt-1 font-medium">Correction: {item.a}</div>}
+                            </div>
+                        ))}
                     </div>
                     <div>
-                        <h4 className="font-bold text-lg mb-2">Transformez la phrase en utilisant « Si seulement... ». (4 points)</h4>
+                        <h4 className="font-bold text-lg mb-4">Transformez la phrase en utilisant « Si seulement... ». (4 points)</h4>
                         <p className="text-sm text-slate-500 mb-2">Exemple : Je n'ai pas écouté ses conseils. → Si seulement j'avais écouté ses conseils !</p>
-                        <ol className="list-decimal pl-5 space-y-2 text-slate-700">
-                            <li>Je n'ai pas acheté ce livre.</li>
-                            <li>Nous sommes arrivés en retard.</li>
-                        </ol>
+                        {[
+                            { s: "Je n'ai pas acheté ce livre.", a: "Si seulement j'avais acheté ce livre !" },
+                            { s: "Nous sommes arrivés en retard.", a: "Si seulement nous n'étions pas arrivés en retard ! (ou: Si seulement nous étions arrivés à l'heure !)" }
+                        ].map((item, i) => (
+                            <div key={i} className="mb-4">
+                                <p className="text-slate-700 mb-1">{i + 1}. {item.s}</p>
+                                <input
+                                    type="text"
+                                    className="w-full p-2 border border-slate-300 rounded focus:border-blue-500"
+                                    placeholder="Réponse..."
+                                    value={userAnswers[`grammar_ex3_${i}`] || ''}
+                                    onChange={(e) => handleInputChange(`grammar_ex3_${i}`, e.target.value)}
+                                />
+                                {showAnswers && <div className="text-green-600 text-sm mt-1 font-medium">Correction: {item.a}</div>}
+                            </div>
+                        ))}
                     </div>
                     <div>
                         <h4 className="font-bold text-lg mb-2">Lexique</h4>
-                        <p className="text-slate-700">Trouvez 5 mots ou expressions liés au thème du logement/quartier. (4 points)</p>
+                        <p className="text-slate-700 mb-2">Trouvez 5 mots ou expressions liés au thème du logement/quartier. (4 points)</p>
+                        <textarea
+                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-2"
+                            placeholder="Vos mots..."
+                            rows={2}
+                            value={userAnswers[`lexicon`] || ''}
+                            onChange={(e) => handleInputChange(`lexicon`, e.target.value)}
+                        ></textarea>
+                        {showAnswers && (
+                            <div className="bg-green-50 p-3 rounded-lg text-green-800 text-sm border border-green-200">
+                                <strong>Suggestions de mots :</strong> appartement, maison, loyer, voisin, quartier calme, immeuble, rez-de-chaussée, déménagement, propriétaire...
+                            </div>
+                        )}
                     </div>
                 </div>
             )
@@ -244,7 +388,16 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                         </div>
                         <h3 className="font-bold text-slate-800 text-lg">{sections[currentSection].title}</h3>
                     </div>
-                    <div className="text-sm text-slate-500 font-medium">Part {currentSection + 1} of {sections.length}</div>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setShowAnswers(!showAnswers)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${showAnswers ? 'bg-amber-100 text-amber-800' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                        >
+                            {showAnswers ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {showAnswers ? 'Hide Answers' : 'Show Answers'}
+                        </button>
+                        <div className="text-sm text-slate-500 font-medium">Part {currentSection + 1} of {sections.length}</div>
+                    </div>
                 </div>
 
                 <div className="p-6 md:p-8">

@@ -634,34 +634,44 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
         - V. Production Orale en Continu (2 thèmes de monologue)
         - VI. Grammaire & Lexique (Exercices à trous, transformations)
 
-    **Format de Sortie JSON:**
+    **Format de Sortie JSON (AVEC CORRIGÉS):**
     {
       "listening": {
         "text": "Texte du dialogue...",
-        "questions": ["Question 1 (1 point)...", "Question 2 (1 point)..."] // 5 questions ouvertes
+        "questions": [
+           { "question": "Question 1...", "answer": "Réponse correcte..." },
+           { "question": "Question 2...", "answer": "Réponse correcte..." }
+        ]
       },
       "reading": {
         "text": "Texte à lire...",
-        "questions": ["Question 1...", "Question 2..."], // 4 questions ouvertes
-        "trueFalse": ["Affirmation 1 (V/F)", "Affirmation 2 (V/F)", "Affirmation 3 (V/F)"] // 3-4 affirmations
+        "questions": [
+            { "question": "Question 1...", "answer": "Réponse correcte..." }
+        ],
+        "trueFalse": [
+            { "statement": "Affirmation 1", "answer": "Vrai ou Faux, car..." },
+            { "statement": "Affirmation 2", "answer": "Vrai ou Faux, car..." }
+        ]
       },
       "writing": {
-        "topicA": "Sujet A (Raconter souvenir...)",
-        "topicB": "Sujet B (Email déménagement...)"
+        "topicA": "Sujet A...",
+        "topicB": "Sujet B...",
+        "correctionModels": { "topicA": "Points clés à inclure...", "topicB": "Points clés à inclure..." }
       },
       "speakingInteraction": {
-         "situation1": { "title": "Titre Sit 1", "points": ["Point 1", "Point 2", "Point 3"] },
-         "situation2": { "title": "Titre Sit 2", "points": ["Point 1", "Point 2", "Point 3"] }
+         "situation1": { "title": "Titre Sit 1", "points": ["..."], "rolePlayKey": "Conseils pour l'interaction..." },
+         "situation2": { "title": "Titre Sit 2", "points": ["..."], "rolePlayKey": "Conseils pour l'interaction..." }
       },
       "speakingContinuous": {
-         "theme1": "Thème 1 (Description...)",
-         "theme2": "Thème 2 (Projets...)"
+         "theme1": "Thème 1...",
+         "theme2": "Thème 2...",
+         "modelPoints": { "theme1": ["Idée 1", "Idée 2"], "theme2": ["Idée 1", "Idée 2"] }
       },
       "grammar": {
-         "exercise1": { "instruction": "Mettez les verbes au passé...", "sentences": ["Phrase 1...", "Phrase 2..."] },
-         "exercise2": { "instruction": "Complétez avec futur/conditionnel...", "sentences": ["Phrase 1...", "Phrase 2..."] },
-         "exercise3": { "instruction": "Transformez avec 'Si seulement'...", "sentences": ["Phrase 1...", "Phrase 2..."] },
-         "lexicon": { "instruction": "Trouvez 5 mots sur le thème...", "theme": "Logement/Quartier" }
+         "exercise1": { "instruction": "...", "sentences": [ { "phrase": "Phrase à trou...", "answer": "Réponse complète" } ] },
+         "exercise2": { "instruction": "...", "sentences": [ { "phrase": "Phrase à compléter...", "answer": "Réponse complète" } ] },
+         "exercise3": { "instruction": "...", "sentences": [ { "phrase": "Phrase à transformer...", "answer": "Réponse transformée" } ] },
+         "lexicon": { "instruction": "...", "theme": "...", "solution": ["Mot 1", "Mot 2", "Mot 3", "Mot 4", "Mot 5"] }
       }
     }
     `;
@@ -679,7 +689,17 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
                             type: Type.OBJECT,
                             properties: {
                                 text: { type: Type.STRING },
-                                questions: { type: Type.ARRAY, items: { type: Type.STRING } }
+                                questions: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            question: { type: Type.STRING },
+                                            answer: { type: Type.STRING }
+                                        },
+                                        required: ["question", "answer"]
+                                    }
+                                }
                             },
                             required: ["text", "questions"]
                         },
@@ -687,8 +707,28 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
                             type: Type.OBJECT,
                             properties: {
                                 text: { type: Type.STRING },
-                                questions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                                trueFalse: { type: Type.ARRAY, items: { type: Type.STRING } }
+                                questions: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            question: { type: Type.STRING },
+                                            answer: { type: Type.STRING }
+                                        },
+                                        required: ["question", "answer"]
+                                    }
+                                },
+                                trueFalse: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            statement: { type: Type.STRING },
+                                            answer: { type: Type.STRING }
+                                        },
+                                        required: ["statement", "answer"]
+                                    }
+                                }
                             },
                             required: ["text", "questions", "trueFalse"]
                         },
@@ -697,14 +737,22 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
                             properties: {
                                 topicA: { type: Type.STRING },
                                 topicB: { type: Type.STRING },
+                                correctionModels: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        topicA: { type: Type.STRING },
+                                        topicB: { type: Type.STRING }
+                                    },
+                                    required: ["topicA", "topicB"]
+                                }
                             },
-                            required: ["topicA", "topicB"]
+                            required: ["topicA", "topicB", "correctionModels"]
                         },
                         speakingInteraction: {
                             type: Type.OBJECT,
                             properties: {
-                                situation1: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, points: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["title", "points"] },
-                                situation2: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, points: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["title", "points"] }
+                                situation1: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, points: { type: Type.ARRAY, items: { type: Type.STRING } }, rolePlayKey: { type: Type.STRING } }, required: ["title", "points", "rolePlayKey"] },
+                                situation2: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, points: { type: Type.ARRAY, items: { type: Type.STRING } }, rolePlayKey: { type: Type.STRING } }, required: ["title", "points", "rolePlayKey"] }
                             },
                             required: ["situation1", "situation2"]
                         },
@@ -713,16 +761,24 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
                             properties: {
                                 theme1: { type: Type.STRING },
                                 theme2: { type: Type.STRING },
+                                modelPoints: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        theme1: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                        theme2: { type: Type.ARRAY, items: { type: Type.STRING } }
+                                    },
+                                    required: ["theme1", "theme2"]
+                                }
                             },
-                            required: ["theme1", "theme2"]
+                            required: ["theme1", "theme2", "modelPoints"]
                         },
                         grammar: {
                             type: Type.OBJECT,
                             properties: {
-                                exercise1: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["instruction", "sentences"] },
-                                exercise2: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["instruction", "sentences"] },
-                                exercise3: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["instruction", "sentences"] },
-                                lexicon: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, theme: { type: Type.STRING } }, required: ["instruction", "theme"] },
+                                exercise1: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { phrase: { type: Type.STRING }, answer: { type: Type.STRING } }, required: ["phrase", "answer"] } } }, required: ["instruction", "sentences"] },
+                                exercise2: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { phrase: { type: Type.STRING }, answer: { type: Type.STRING } }, required: ["phrase", "answer"] } } }, required: ["instruction", "sentences"] },
+                                exercise3: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { phrase: { type: Type.STRING }, answer: { type: Type.STRING } }, required: ["phrase", "answer"] } } }, required: ["instruction", "sentences"] },
+                                lexicon: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, theme: { type: Type.STRING }, solution: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["instruction", "theme", "solution"] },
                             },
                             required: ["exercise1", "exercise2", "exercise3", "lexicon"]
                         }
