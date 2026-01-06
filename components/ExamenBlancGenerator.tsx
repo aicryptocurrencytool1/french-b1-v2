@@ -145,9 +145,14 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                                 </button>
                             </div>
                         )}
-                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg whitespace-pre-line text-sm text-slate-700 font-mono leading-relaxed">
-                            {formatDialogue(examData.listening.text)}
-                        </div>
+                        <details className="bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+                            <summary className="px-4 py-2 text-sm font-semibold text-slate-600 cursor-pointer hover:bg-slate-200 transition-colors">
+                                Show Transcription
+                            </summary>
+                            <div className="p-4 text-sm text-slate-700 whitespace-pre-line leading-relaxed font-mono">
+                                {formatDialogue(examData.listening.text)}
+                            </div>
+                        </details>
                         <div className="space-y-4 mt-6">
                             <h4 className="font-bold">Questions :</h4>
                             {examData.listening.questions.map((q: any, i: number) => (
