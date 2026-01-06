@@ -5,7 +5,7 @@ import { dbService } from './dbService';
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // FIX: Updated model name to a recommended one for better performance.
-const modelName = 'gemini-1.5-pro';
+const modelName = 'gemini-2.5-flash-lite';
 
 // --- Helper Functions ---
 
@@ -105,7 +105,7 @@ export const getSpeech = async (text: string): Promise<string> => {
 
     try {
         const response = await ai.models.generateContent({
-            model: modelName,
+            model: 'gemini-2.5-flash-tts',
             contents: [{ parts: [{ text: text }] }],
             config: {
                 responseModalities: [Modality.AUDIO],
