@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { essays } from './essayData';
 import { Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { getSpeech, playAudio } from '../services/geminiService';
+import { getSpeech, playAudio } from '../services/aiService';
 import { Loader2, Volume2, PenSquare } from 'lucide-react';
 
 interface EssayWriterProps {

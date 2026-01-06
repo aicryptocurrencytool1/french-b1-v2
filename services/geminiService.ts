@@ -25,6 +25,75 @@ const parseGeminiJson = <T>(text: string | undefined): T => {
     return JSON.parse(cleanedText) as T;
 };
 
+// --- DeepSeek API Integration ---
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+const DEEPSEEK_MODEL = 'deepseek-chat';
+
+interface DeepSeekMessage {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+}
+
+interface DeepSeekRequest {
+    model: string;
+    messages: DeepSeekMessage[];
+    temperature?: number;
+    max_tokens?: number;
+    response_format?: { type: 'json_object' };
+}
+
+// Helper to call DeepSeek API
+const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: boolean = false): Promise<string> => {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) {
+        throw new Error('DEEPSEEK_API_KEY is not set. Please add it to your environment variables.');
+    }
+
+    const messages: DeepSeekMessage[] = [];
+    if (systemPrompt) {
+        messages.push({ role: 'system', content: systemPrompt });
+    }
+    messages.push({ role: 'user', content: prompt });
+
+    const requestBody: DeepSeekRequest = {
+        model: DEEPSEEK_MODEL,
+        messages,
+        temperature: 0.7,
+        max_tokens: 4000,
+    };
+
+    if (expectJSON) {
+        requestBody.response_format = { type: 'json_object' };
+    }
+
+    try {
+        const response = await fetch(DEEPSEEK_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        return data.choices[0].message.content || '';
+    } catch (error) {
+        console.error('DeepSeek API call failed:', error);
+        throw error;
+    }
+};
+
+// Parse JSON from DeepSeek response (works with both formats)
+const parseDeepSeekJson = <T>(text: string): T => {
+    return parseGeminiJson<T>(text); // Reuse existing parser
+};
+
 
 function decode(base64: string) {
     const binaryString = atob(base64);

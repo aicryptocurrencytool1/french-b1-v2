@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PHRASE_TOPICS, TENSE_OPTIONS } from '../constants';
-import { getDailyPhrases, getSpeech, playAudio } from '../services/geminiService';
+import { getDailyPhrases, getSpeech, playAudio } from '../services/aiService';
 import { Phrase, Language } from '../types';
 import { Loader2, Quote, Volume2, ChevronDown, Info } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';

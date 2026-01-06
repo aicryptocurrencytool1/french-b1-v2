@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
-import { Loader2, PlayCircle, Eye, EyeOff, RefreshCw, PenSquare, MessageCircle, Mic, Sparkles, Headphones } from 'lucide-react';
-import { getExamenBlancGeneratorData, getSpeech, playAudio, getWritingExample, getSpeakingExample } from '../services/geminiService';
+import { Loader2, PlayCircle, Eye, EyeOff, RefreshCw, PenSquare, MessageCircle, Mic, Sparkles, Headphones, ArrowRight } from 'lucide-react';
+import { getExamenBlancGeneratorData, getSpeech, playAudio, getWritingExample, getSpeakingExample } from '../services/aiService';
 import { Language } from '../types';
 
 interface ExamenBlancGeneratorProps {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getExamPrompts, getWritingFeedback, getWritingExample, getSpeakingExample, playAudio, getListeningExample, getReadingExample } from '../services/geminiService';
+import { getExamPrompts, getWritingFeedback, getWritingExample, getSpeakingExample, playAudio, getListeningExample, getReadingExample } from '../services/aiService';
 import { Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { Loader2, RefreshCw, PenSquare, Mic, Wand2, PlayCircle, Headphones, BookOpen } from 'lucide-react';

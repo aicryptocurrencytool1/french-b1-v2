@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getComprehensiveExamData, playAudio, getWritingExample, resumeAudioContext } from '../services/geminiService';
+import { getComprehensiveExamData, playAudio, getWritingExample, resumeAudioContext } from '../services/aiService';
 import { QuizQuestion, Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { Loader2, FileText, CheckCircle2, XCircle, Headphones, BookOpen, PenSquare, Mic, PlayCircle, Trophy, ArrowRight, Wand2 } from 'lucide-react';
-import { getWritingFeedback, getSpeakingExample } from '../services/geminiService';
+import { getWritingFeedback, getSpeakingExample } from '../services/aiService';
 
 // Re-usable FormattedContent component from Grammar.tsx
 const renderInlineFormatting = (text: string) => {

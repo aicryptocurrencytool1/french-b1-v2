@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getFlashcards, getSpeech, playAudio, resumeAudioContext } from '../services/geminiService';
+import { getFlashcards, getSpeech, playAudio, resumeAudioContext } from '../services/aiService';
 import { Flashcard, Language } from '../types';
 import { Loader2, RefreshCw, Volume2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { GRAMMAR_TOPICS, VOCAB_CATEGORIES, FLASHCARD_GRAMMAR_TOPIC_IDS } from '../constants';

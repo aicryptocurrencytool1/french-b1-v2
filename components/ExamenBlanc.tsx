@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { Headphones, BookOpen, PenSquare, Mic, CheckCircle, ArrowRight, Loader2, PlayCircle, Eye, EyeOff, Sparkles } from 'lucide-react';
-import { getSpeech, resumeAudioContext, playAudio, getWritingExample, getSpeakingExample } from '../services/geminiService';
+import { getSpeech, resumeAudioContext, playAudio, getWritingExample, getSpeakingExample } from '../services/aiService';
 
 interface ExamenBlancProps {
     language: Language;

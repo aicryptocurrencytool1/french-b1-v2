@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GRAMMAR_TOPICS } from '../constants';
-import { getQuiz } from '../services/geminiService';
+import { getQuiz } from '../services/aiService';
 import { QuizQuestion, Topic, Language } from '../types';
 import { Loader2, CheckCircle2, XCircle, RefreshCcw, Trophy } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';

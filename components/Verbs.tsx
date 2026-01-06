@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { COMMON_VERBS } from '../constants';
-import { getVerbConjugation, getSpeech, playAudio } from '../services/geminiService';
+import { getVerbConjugation, getSpeech, playAudio } from '../services/aiService';
 import { VerbConjugation, Language } from '../types';
 import { Search, Loader2, Volume2 } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';

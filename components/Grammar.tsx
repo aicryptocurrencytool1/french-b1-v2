@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GRAMMAR_TOPICS } from '../constants';
-import { getGrammarExplanation } from '../services/geminiService';
+import { getGrammarExplanation } from '../services/aiService';
 import { ChevronRight, Loader2, BookOpen, ArrowLeft } from 'lucide-react';
 import { Topic, Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
