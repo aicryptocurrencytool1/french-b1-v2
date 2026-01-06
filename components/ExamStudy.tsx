@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { getExamPrompts, getWritingFeedback, getWritingExample, getSpeakingExample, playAudio } from '../services/geminiService';
+import { getExamPrompts, getWritingFeedback, getWritingExample, getSpeakingExample, playAudio, getListeningExample, getReadingExample } from '../services/geminiService';
 import { Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { Loader2, RefreshCw, PenSquare, Mic, Wand2, PlayCircle } from 'lucide-react';
+import { Loader2, RefreshCw, PenSquare, Mic, Wand2, PlayCircle, Headphones, BookOpen } from 'lucide-react';
 
-// Re-usable FormattedContent component from Grammar.tsx
+// Re-usable FormattedContent component
 const renderInlineFormatting = (text: string) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, i) => {
@@ -46,7 +46,13 @@ interface ExamStudyProps {
     language: Language;
 }
 
-type Prompts = { writing: string; speakingContinuous: string; speakingInteraction: string; };
+type Prompts = {
+    listening: string;
+    reading: string;
+    writing: string;
+    speakingContinuous: string;
+    speakingInteraction: string;
+};
 
 const ExamStudy: React.FC<ExamStudyProps> = ({ language }) => {
     const { t } = useTranslation(language);
@@ -56,7 +62,9 @@ const ExamStudy: React.FC<ExamStudyProps> = ({ language }) => {
     const fetchPrompts = async () => {
         setLoading(true);
         const data = await getExamPrompts();
-        setPrompts(data);
+        // The API returns the correct structure now, but let's cast it or ensure it matches
+        // Ideally getExamPrompts return type should be updated in geminiService.ts
+        setPrompts(data as unknown as Prompts);
         setLoading(false);
     };
 
@@ -88,14 +96,129 @@ const ExamStudy: React.FC<ExamStudyProps> = ({ language }) => {
                 </div>
             ) : prompts && (
                 <div className="space-y-12">
+                    <ListeningPractice prompt={prompts.listening} language={language} t={t} />
+                    <ReadingPractice prompt={prompts.reading} language={language} t={t} />
                     <WritingPractice prompt={prompts.writing} language={language} t={t} />
-                    <SpeakingPractice prompt={prompts.speakingContinuous} language={language} t={t} />
+                    <SpeakingPractice prompt={prompts.speakingContinuous} title={t('exam.speakingContinuousTitle')} language={language} t={t} />
+                    <SpeakingPractice prompt={prompts.speakingInteraction} title={t('exam.speakingInteractionTitle')} language={language} t={t} />
                 </div>
             )}
         </div>
     );
 };
 
+
+const ListeningPractice: React.FC<{ prompt: string; language: Language; t: (k: string) => string }> = ({ prompt, language, t }) => {
+    const [example, setExample] = useState<{ text: string; audio: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const handleGetExample = async () => {
+        setLoading(true);
+        setExample(null);
+        const res = await getListeningExample(prompt);
+        setExample(res);
+        setLoading(false);
+    }
+
+    const handlePlayAudio = async () => {
+        if (!example?.audio || isPlaying) return;
+        setIsPlaying(true);
+        await playAudio(example.audio);
+        setIsPlaying(false);
+    };
+
+    return (
+        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-200">
+            <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0">
+                    <Headphones size={24} />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-slate-800 font-heading">{t('exam.listeningTitle')}</h3>
+                    <p className="text-slate-600">{prompt}</p>
+                </div>
+            </div>
+
+            <div className="mt-4">
+                <button
+                    onClick={handleGetExample}
+                    disabled={loading}
+                    className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex justify-center items-center gap-2"
+                >
+                    {loading ? <Loader2 className="animate-spin" /> : <Wand2 size={18} />}
+                    {t('examStudy.showExample')}
+                </button>
+            </div>
+
+            {example && (
+                <div className="mt-6 pt-6 border-t border-slate-200 animate-in fade-in">
+                    <div className="flex justify-between items-center mb-2">
+                        <h4 className="font-bold text-lg font-heading text-slate-800">{t('examStudy.modelAnswer')}</h4>
+                        <button
+                            onClick={handlePlayAudio}
+                            disabled={isPlaying}
+                            className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                        >
+                            {isPlaying ? <Loader2 size={16} className="animate-spin" /> : <PlayCircle size={16} />}
+                            {t('examStudy.listenToExample')}
+                        </button>
+                    </div>
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 italic">
+                        {renderInlineFormatting(example.text)}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ReadingPractice: React.FC<{ prompt: string; language: Language; t: (k: string) => string }> = ({ prompt, language, t }) => {
+    const [example, setExample] = useState<{ text: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const handleGetExample = async () => {
+        setLoading(true);
+        setExample(null);
+        const res = await getReadingExample(prompt);
+        setExample(res);
+        setLoading(false);
+    }
+
+    return (
+        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-200">
+            <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
+                    <BookOpen size={24} />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-slate-800 font-heading">{t('exam.readingTitle')}</h3>
+                    <p className="text-slate-600">{prompt}</p>
+                </div>
+            </div>
+
+            <div className="mt-4">
+                <button
+                    onClick={handleGetExample}
+                    disabled={loading}
+                    className="w-full py-3 bg-amber-600 text-white font-bold rounded-xl hover:bg-amber-700 disabled:opacity-50 transition-colors flex justify-center items-center gap-2"
+                >
+                    {loading ? <Loader2 className="animate-spin" /> : <Wand2 size={18} />}
+                    {t('examStudy.showExample')}
+                </button>
+            </div>
+
+            {example && (
+                <div className="mt-6 pt-6 border-t border-slate-200 animate-in fade-in">
+                    <h4 className="font-bold text-lg font-heading text-slate-800 mb-2">{t('examStudy.modelAnswer')}</h4>
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
+                        {renderInlineFormatting(example.text)}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const WritingPractice: React.FC<{ prompt: string; language: Language; t: (k: string) => string }> = ({ prompt, language, t }) => {
     const [userText, setUserText] = useState('');
@@ -187,7 +310,7 @@ const WritingPractice: React.FC<{ prompt: string; language: Language; t: (k: str
     );
 };
 
-const SpeakingPractice: React.FC<{ prompt: string; language: Language; t: (k: string) => string }> = ({ prompt, language, t }) => {
+const SpeakingPractice: React.FC<{ prompt: string; title?: string; language: Language; t: (k: string) => string }> = ({ prompt, title, language, t }) => {
     const [example, setExample] = useState<{ text: string; audio: string } | null>(null);
     const [loading, setLoading] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -214,7 +337,7 @@ const SpeakingPractice: React.FC<{ prompt: string; language: Language; t: (k: st
                     <Mic size={24} />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-slate-800 font-heading">{t('examStudy.speakingPractice')}</h3>
+                    <h3 className="text-xl font-bold text-slate-800 font-heading">{title || t('examStudy.speakingPractice')}</h3>
                     <p className="text-slate-600">{prompt}</p>
                 </div>
             </div>

@@ -330,9 +330,15 @@ export const getDailyPhrases = async (topic: string, tense: string, language: La
 }
 
 // --- NEW COMPREHENSIVE EXAM GENERATION ---
-export const getExamPrompts = async (): Promise<{ writing: string; speakingContinuous: string; speakingInteraction: string; }> => {
+export const getExamPrompts = async (): Promise<{
+    listening: string;
+    reading: string;
+    writing: string;
+    speakingContinuous: string;
+    speakingInteraction: string;
+}> => {
     const prompt = `
-    Générez 3 sujets d'examen de français niveau B1 basés sur le syllabus suivant. Le vocabulaire doit être STRICTEMENT de niveau A2-B1 (simple et courant). Retournez un seul objet JSON valide.
+    Générez 5 sujets de pratique pour le Français B1, basés sur le syllabus suivant. Le vocabulaire doit être STRICTEMENT de niveau A2-B1 (simple et courant). Retournez un seul objet JSON valide.
 
     **Syllabus (Strict):**
     - **Savoir:** Raconter un événement au passé, présenter son logement/quartier, exprimer des souhaits, résumer un fait divers.
@@ -341,6 +347,8 @@ export const getExamPrompts = async (): Promise<{ writing: string; speakingConti
 
     **Structure JSON:**
     {
+      "listening": "Un court texte ou dialogue (environ 100 mots) destiné à la compréhension orale sur un des thèmes.",
+      "reading": "Un court texte (environ 150 mots) destiné à la compréhension écrite (ex: email, article simple).",
       "writing": "Un sujet de production écrite (80-100 mots) demandant de raconter une expérience passée ou de décrire un projet futur.",
       "speakingContinuous": "Un sujet de monologue (1-2 minutes) pour décrire une expérience ou exprimer un souhait.",
       "speakingInteraction": "Un scénario de jeu de rôle pour échanger des informations sur un des thèmes."
@@ -358,22 +366,32 @@ export const getExamPrompts = async (): Promise<{ writing: string; speakingConti
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        writing: { type: Type.STRING, description: "Un sujet d'écriture en français." },
-                        speakingContinuous: { type: Type.STRING, description: "Un sujet de monologue en français." },
-                        speakingInteraction: { type: Type.STRING, description: "Un scénario de dialogue en français." }
+                        listening: { type: Type.STRING },
+                        reading: { type: Type.STRING },
+                        writing: { type: Type.STRING },
+                        speakingContinuous: { type: Type.STRING },
+                        speakingInteraction: { type: Type.STRING }
                     },
-                    required: ["writing", "speakingContinuous", "speakingInteraction"]
+                    required: ["listening", "reading", "writing", "speakingContinuous", "speakingInteraction"]
                 }
             }
         });
 
-        const prompts = parseGeminiJson<{ writing: string; speakingContinuous: string; speakingInteraction: string; }>(response.text);
+        const prompts = parseGeminiJson<{
+            listening: string;
+            reading: string;
+            writing: string;
+            speakingContinuous: string;
+            speakingInteraction: string;
+        }>(response.text);
         return prompts;
 
     } catch (e) {
         console.error("Error generating exam prompts", e);
         // Provide some fallback prompts in case of API error
         return {
+            listening: "Écoutez ce dialogue entre deux amis qui parlent de leurs dernières vacances.",
+            reading: "Lisez ce courriel d'un ami qui vous invite à visiter sa nouvelle maison à Bruxelles.",
             writing: "Racontez un souvenir d'enfance. Décrivez où vous étiez (imparfait) et racontez une chose amusante qui est arrivée (passé composé).",
             speakingContinuous: "Décrivez votre week-end idéal. Qu'est-ce que vous feriez s'il n'y avait aucune limite ?",
             speakingInteraction: "Vous voulez réserver une table dans un restaurant pour l'anniversaire d'un ami. Téléphonez au restaurant pour demander des informations et faire une réservation."
@@ -564,6 +582,35 @@ export const getSpeakingExample = async (prompt: string, language: Language): Pr
         return { text, audio };
     } catch (error) {
         console.error("Error getting speaking example:", error);
+        throw error;
+    }
+};
+
+export const getListeningExample = async (prompt: string): Promise<{ text: string; audio: string }> => {
+    try {
+        const textResponse = await ai.models.generateContent({
+            model: modelName,
+            contents: `Pour la consigne de compréhension orale suivante: "${prompt}", générez un dialogue naturel en français (niveau B1) entre deux personnes. Le vocabulaire doit être simple et courant. Si le sujet s'y prête, utilisez un contexte belge.`,
+        });
+        const text = textResponse.text || "Erreur de génération du dialogue.";
+        const audio = await getSpeech(text);
+        return { text, audio };
+    } catch (error) {
+        console.error("Error getting listening example:", error);
+        throw error;
+    }
+};
+
+export const getReadingExample = async (prompt: string): Promise<{ text: string }> => {
+    try {
+        const textResponse = await ai.models.generateContent({
+            model: modelName,
+            contents: `Pour la consigne de compréhension écrite suivante: "${prompt}", générez un court texte en français (niveau B1) d'environ 150 mots. Il peut s'agir d'un email, d'un article de blog, ou d'une histoire. Le vocabulaire doit être simple. Si le sujet s'y prête, utilisez un contexte belge.`,
+        });
+        const text = textResponse.text || "Erreur de génération du texte.";
+        return { text };
+    } catch (error) {
+        console.error("Error getting reading example:", error);
         throw error;
     }
 };

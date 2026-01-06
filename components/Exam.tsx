@@ -86,7 +86,7 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
 
     const handleWritingComplete = (feedback: string, userText: string) => {
         setExamData(prev => ({ ...prev, writing: { ...prev.writing!, feedback, userText } }));
-        setExamState('speaking');
+        setExamState('speaking-continuous');
     }
 
     const ExamIntro = () => (
@@ -101,7 +101,7 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
             <div className="p-6 bg-slate-100 border border-slate-200 rounded-xl text-start w-full max-w-md">
                 <h3 className="font-bold text-slate-700 mb-3 font-heading">{t('exam.introTitle')}</h3>
                 <ul className="space-y-2">
-                    {[t('exam.part1'), t('exam.part2'), t('exam.part3'), t('exam.part4')].map((part, i) => (
+                    {[t('exam.part1'), t('exam.part2'), t('exam.part3'), "4. Production Orale (Monologue)", "5. Production Orale (Interaction)"].map((part, i) => (
                         <li key={i} className="flex items-center space-x-3 text-slate-600">
                             <span className="w-5 h-5 flex items-center justify-center bg-indigo-200 text-indigo-700 rounded-full text-xs font-bold">{i + 1}</span>
                             <span>{part}</span>
@@ -157,11 +157,21 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
         />
     }
 
-    if (examState === 'speaking' && examData.speaking) {
+    if (examState === 'speaking-continuous' && examData.speaking) {
         return <SpeakingSection
+            mode="continuous"
             language={language}
-            continuousPrompt={examData.speaking.continuousPrompt}
-            interactionPrompt={examData.speaking.interactionPrompt}
+            prompt={examData.speaking.continuousPrompt}
+            onComplete={() => setExamState('speaking-interaction')}
+            t={t}
+        />
+    }
+
+    if (examState === 'speaking-interaction' && examData.speaking) {
+        return <SpeakingSection
+            mode="interaction"
+            language={language}
+            prompt={examData.speaking.interactionPrompt}
             onComplete={() => setExamState('results')}
             t={t}
         />
@@ -396,11 +406,11 @@ const WritingSection: React.FC<{
 
 const SpeakingSection: React.FC<{
     language: Language,
-    continuousPrompt: string,
-    interactionPrompt: string,
+    prompt: string,
+    mode: 'continuous' | 'interaction',
     onComplete: () => void,
     t: (k: string) => string
-}> = ({ language, continuousPrompt, interactionPrompt, onComplete, t }) => {
+}> = ({ language, prompt, mode, onComplete, t }) => {
     const [isRecording, setIsRecording] = useState(false);
     const [example, setExample] = useState<{ text: string; audio: string } | null>(null);
     const [loadingExample, setLoadingExample] = useState(false);
@@ -416,7 +426,7 @@ const SpeakingSection: React.FC<{
 
     const handleGetExample = async () => {
         setLoadingExample(true);
-        const res = await getSpeakingExample(continuousPrompt, language);
+        const res = await getSpeakingExample(prompt, language);
         setExample(res);
         setLoadingExample(false);
     };
@@ -428,6 +438,11 @@ const SpeakingSection: React.FC<{
         setIsAudioPlaying(false);
     };
 
+    const title = mode === 'continuous' ? t('exam.speakingContinuousTitle') : t('exam.speakingInteractionTitle');
+    const instruction = mode === 'continuous'
+        ? "Parlez pendant 1 à 2 minutes sur le sujet suivant."
+        : "Participez au jeu de rôle suivant.";
+
     return (
         <div className="max-w-3xl mx-auto h-full flex flex-col justify-center animate-in fade-in">
             <div className="text-center mb-8 space-y-3">
@@ -438,14 +453,11 @@ const SpeakingSection: React.FC<{
                 <p className="text-slate-500">{t('exam.speakingInstructions')}</p>
             </div>
 
-            <div className="space-y-6">
-                <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
-                    <h3 className="font-bold text-lg font-heading text-slate-800">{t('exam.speakingContinuousTitle')}</h3>
-                    <p className="text-slate-600 mt-2 mb-4">{continuousPrompt}</p>
-                </div>
-                <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
-                    <h3 className="font-bold text-lg font-heading text-slate-800">{t('exam.speakingInteractionTitle')}</h3>
-                    <p className="text-slate-600 mt-2 mb-4">{interactionPrompt}</p>
+            <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100">
+                <h3 className="font-bold text-lg font-heading text-slate-800">{title}</h3>
+                <p className="text-slate-500 text-sm mb-4">{instruction}</p>
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p className="text-slate-800 font-medium leading-relaxed">{prompt}</p>
                 </div>
             </div>
 
@@ -486,7 +498,7 @@ const SpeakingSection: React.FC<{
             )}
 
             <button onClick={onComplete} className="mt-8 w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
-                {t('exam.finishExam')}
+                {t('exam.nextSection')}
             </button>
         </div>
     );
