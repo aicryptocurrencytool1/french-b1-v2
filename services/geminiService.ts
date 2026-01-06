@@ -105,7 +105,7 @@ export const getSpeech = async (text: string): Promise<string> => {
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-tts',
+            model: 'gemini-2.0-flash-exp',
             contents: [{ parts: [{ text: text }] }],
             config: {
                 responseModalities: [Modality.AUDIO],
@@ -578,7 +578,12 @@ export const getSpeakingExample = async (prompt: string, language: Language): Pr
             contents: `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${prompt}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1. Si le sujet concerne le logement ou le quartier, situez l'action en **Belgique** (ex: Bruxelles).`,
         });
         const text = textResponse.text || "Je ne sais pas quoi dire pour le moment.";
-        const audio = await getSpeech(text);
+        let audio = "";
+        try {
+            audio = await getSpeech(text);
+        } catch (e) {
+            console.error("Speaking example audio failed", e);
+        }
         return { text, audio };
     } catch (error) {
         console.error("Error getting speaking example:", error);
@@ -593,7 +598,12 @@ export const getListeningExample = async (prompt: string): Promise<{ text: strin
             contents: `Pour la consigne de compréhension orale suivante: "${prompt}", générez un dialogue naturel en français (niveau B1) entre deux personnes. Le vocabulaire doit être simple et courant. Si le sujet s'y prête, utilisez un contexte belge.`,
         });
         const text = textResponse.text || "Erreur de génération du dialogue.";
-        const audio = await getSpeech(text);
+        let audio = "";
+        try {
+            audio = await getSpeech(text);
+        } catch (e) {
+            console.error("Listening example audio failed", e);
+        }
         return { text, audio };
     } catch (error) {
         console.error("Error getting listening example:", error);
@@ -790,7 +800,12 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
 
         const examData = parseGeminiJson<any>(response.text);
         if (examData?.listening?.text) {
-            examData.listening.audio = await getSpeech(examData.listening.text);
+            try {
+                examData.listening.audio = await getSpeech(examData.listening.text);
+            } catch (error) {
+                console.error("Audio generation failed, proceeding without audio:", error);
+                examData.listening.audio = null;
+            }
         }
         return examData;
 
