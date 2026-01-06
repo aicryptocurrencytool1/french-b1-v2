@@ -224,12 +224,287 @@ Return a valid JSON array.`;
     }
 };
 
-// For exam generation, delegate to Gemini service for now (complex structured output)
-export const getExamPrompts = geminiService.getExamPrompts;
-export const getComprehensiveExamData = geminiService.getComprehensiveExamData;
-export const getExamenBlancGeneratorData = geminiService.getExamenBlancGeneratorData;
-export const getWritingFeedback = geminiService.getWritingFeedback;
-export const getWritingExample = geminiService.getWritingExample;
-export const getSpeakingExample = geminiService.getSpeakingExample;
-export const getListeningExample = geminiService.getListeningExample;
-export const getReadingExample = geminiService.getReadingExample;
+// Migrated Practice Examples and Prompts to DeepSeek
+export const getExamPrompts = async (): Promise<{
+    listening: string;
+    reading: string;
+    writing: string;
+    speakingContinuous: string;
+    speakingInteraction: string;
+}> => {
+    try {
+        const prompt = `
+    Générez 5 sujets de pratique pour le Français B1, basés sur le syllabus suivant. Le vocabulaire doit être STRICTEMENT de niveau A2-B1 (simple et courant). Retournez un seul objet JSON valide.
+
+    **Syllabus (Strict):**
+    - **Savoir:** Raconter un événement au passé, présenter son logement/quartier, exprimer des souhaits, résumer un fait divers.
+    - **Langue:** Passé composé, Imparfait, Plus-que-parfait, Conditionnel, Futur simple/proche.
+    - **Structures:** "Si j'avais... j'aurais...", "Si seulement...".
+
+    **Structure JSON:**
+    {
+      "listening": "Un court texte ou dialogue (environ 100 mots) destiné à la compréhension orale sur un des thèmes.",
+      "reading": "Un court texte (environ 150 mots) destiné à la compréhension écrite (ex: email, article simple).",
+      "writing": "Un sujet de production écrite (80-100 mots) demandant de raconter une expérience passée ou de décrire un projet futur.",
+      "speakingContinuous": "Un sujet de monologue (1-2 minutes) pour décrire une expérience ou exprimer un souhait.",
+      "speakingInteraction": "Un scénario de jeu de rôle pour échanger des informations sur un des thèmes."
+    }
+    **Instructions Spécifiques:**
+    - Pour les thèmes "Logement" and "Quartier", utilisez la **Belgique** comme contexte (ex: Bruxelles, Liège, maison typique en brique).
+    `;
+
+        const response = await callDeepSeek(prompt, undefined, true);
+        return parseJSON<any>(response);
+    } catch (error: any) {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+            return await geminiService.getExamPrompts();
+        }
+        // Fallback prompts
+        return {
+            listening: "Écoutez ce dialogue entre deux amis qui parlent de leurs dernières vacances.",
+            reading: "Lisez ce courriel d'un ami qui vous invite à visiter sa nouvelle maison à Bruxelles.",
+            writing: "Racontez un souvenir d'enfance. Décrivez où vous étiez (imparfait) et racontez une chose amusante qui est arrivée (passé composé).",
+            speakingContinuous: "Décrivez votre week-end idéal. Qu'est-ce que vous feriez s'il n'y avait aucune limite ?",
+            speakingInteraction: "Vous voulez réserver une table dans un restaurant pour l'anniversaire d'un ami. Téléphonez au restaurant pour demander des informations et faire une réservation."
+        };
+    }
+};
+
+export const getWritingFeedback = async (promptText: string, userText: string, language: Language): Promise<string> => {
+    try {
+        const prompt = `En tant que professeur de FLE, évaluez la production écrite suivante pour un niveau B1.
+        Consigne: "${promptText}"
+        Texte de l'étudiant: "${userText}"
+        
+        Fournissez un feedback constructif en ${language} incluant:
+        1. Une appréciation globale.
+        2. Les points forts (vocabulaire, grammaire).
+        3. Les points à améliorer.
+        4. Une proposition de correction pour les erreurs majeures.
+        Utilisez le Markdown pour la mise en forme (##, *, **).`;
+
+        return await callDeepSeek(prompt);
+    } catch (error: any) {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+            return await geminiService.getWritingFeedback(promptText, userText, language);
+        }
+        return "Impossible de générer le feedback pour le moment.";
+    }
+};
+
+export const getWritingExample = async (promptText: string): Promise<{ modelAnswer: string; analysis: string; }> => {
+    try {
+        const prompt = `Pour la consigne de niveau B1 suivante: "${promptText}", générez un objet JSON contenant:
+        1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Utilisez un vocabulaire simple et courant (niveau A2-B1). Si le sujet concerne le logement ou le quartier, situez l'action en **Belgique** (ex: Bruxelles). Incluez des ** pour mettre en évidence les mots grammaticaux clés.
+        2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1 (utilisation des temps, vocabulaire, connecteurs). Formatez l'analyse en Markdown simple avec des titres (##) et des listes (*).`;
+
+        const response = await callDeepSeek(prompt, undefined, true);
+        return parseJSON<{ modelAnswer: string; analysis: string; }>(response);
+    } catch (error: any) {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+            return await geminiService.getWritingExample(promptText);
+        }
+        return { modelAnswer: "Could not generate a model response.", analysis: "" };
+    }
+};
+
+export const getSpeakingExample = async (promptText: string, language: Language): Promise<{ text: string; audio: string }> => {
+    try {
+        const prompt = `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${promptText}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1. Si le sujet concerne le logement ou le quartier, situez l'action en **Belgique** (ex: Bruxelles).`;
+
+        const text = await callDeepSeek(prompt);
+        let audio = "";
+        try {
+            audio = await getSpeech(text);
+        } catch (e) {
+            console.error("Speaking example audio failed", e);
+        }
+        return { text, audio };
+    } catch (error: any) {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+            return await geminiService.getSpeakingExample(promptText, language);
+        }
+        return { text: "Je ne sais pas quoi dire pour le moment.", audio: "" };
+    }
+};
+
+export const getListeningExample = async (promptText: string): Promise<{ text: string; audio: string }> => {
+    try {
+        const prompt = `Pour la consigne de compréhension orale suivante: "${promptText}", générez un dialogue naturel en français (niveau B1) entre deux personnes. Le vocabulaire doit être simple et courant. Si le sujet s'y prête, utilisez un contexte belge.`;
+
+        const text = await callDeepSeek(prompt);
+        let audio = "";
+        try {
+            audio = await getSpeech(text);
+        } catch (e) {
+            console.error("Listening example audio failed", e);
+        }
+        return { text, audio };
+    } catch (error: any) {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+            return await geminiService.getListeningExample(promptText);
+        }
+        return { text: "Erreur de génération du dialogue.", audio: "" };
+    }
+};
+
+export const getReadingExample = async (promptText: string): Promise<{ text: string }> => {
+    try {
+        const prompt = `Pour la consigne de compréhension écrite suivante: "${promptText}", générez un court texte en français (niveau B1) d'environ 150 mots. Il peut s'agir d'un email, d'un article de blog, ou d'une histoire. Le vocabulaire doit être simple. Si le sujet s'y prête, utilisez un contexte belge.`;
+
+        const text = await callDeepSeek(prompt);
+        return { text };
+    } catch (error: any) {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+            return await geminiService.getReadingExample(promptText);
+        }
+        return { text: "Erreur de génération du texte." };
+    }
+};
+
+export const getComprehensiveExamData = async (language: Language) => {
+    try {
+        const prompt = `
+    Créez un examen complet de français niveau B1, en respectant scrupuleusement le syllabus fourni. Le vocabulaire doit être STRICTEMENT adapté au niveau A2-B1 (mots fréquents et simples). Retournez un seul objet JSON valide.
+
+    **Syllabus Clés (Strict):**
+    1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
+    2.  **Savoir (Compétences):**
+        - Raconter un événement au passé en articulant les temps (PC, Imparfait, PQP).
+        - Présenter son logement ou son quartier.
+        - Exprimer des souhaits (conditionnel).
+        - Résumer un fait divers.
+        - Exprimer des actions futures.
+    3.  **Langue (Grammaire):**
+        - Passé: Imparfait, Plus-que-parfait, Passé composé.
+        - Présent: Indicatif et Conditionnel.
+        - Futur: Simple et Proche.
+        - Structures: "Si j'avais..., j'aurais..." / "Si seulement il avait fait ça !".
+
+    **Structure JSON de sortie:**
+    {
+      "listening": {
+        "text": "Un dialogue de ~120 mots entre deux personnes sur un des thèmes, utilisant un mélange des temps requis.",
+        "questions": [ { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswerIndex": 0, "explanation": "Explication en ${language}" } ] // 4 questions
+      },
+      "reading": {
+        "text": "Un texte court de ~150 mots (email, blog post) sur un des thèmes, utilisant un mélange des temps requis.",
+        "questions": [ { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswerIndex": 0, "explanation": "Explication en ${language}" } ] // 4 questions
+      },
+      "writing": {
+        "prompt": "Un sujet qui demande explicitement à l'étudiant de raconter une expérience passée en utilisant l'imparfait pour la description et le passé composé pour les actions."
+      },
+      "speaking": {
+        "continuousPrompt": "Un sujet de production orale en continu qui demande de décrire une expérience personnelle ou de parler de projets futurs.",
+        "interactionPrompt": "Un scénario de jeu de rôle pour une interaction orale qui nécessite d'échanger des informations sur des événements passés et futurs."
+      }
+    }
+    **Instructions Spécifiques:**
+    - Pour les thèmes "Logement" and "Quartier", la réponse ou le scénario DOIT se dérouler en **Belgique** (ex: Bruxelles).
+    Assurez-vous que le contenu de chaque section (listening, reading, writing, speaking) reflète fidèlement les thèmes et la grammaire du syllabus.
+    `;
+
+        const response = await callDeepSeek(prompt.replace('${language}', language), undefined, true);
+        const examData = parseJSON<any>(response);
+
+        // Fetch audio for the listening text using Gemini TTS
+        try {
+            examData.listening.audio = await getSpeech(examData.listening.text);
+        } catch (error) {
+            console.error("Audio generation failed for exam, proceeding without audio:", error);
+            examData.listening.audio = "";
+        }
+
+        return examData;
+    } catch (error: any) {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+            return await geminiService.getComprehensiveExamData(language);
+        }
+        console.error("Error generating comprehensive exam data", error);
+        throw new Error("Failed to generate the exam based on the syllabus.");
+    }
+};
+
+export const getExamenBlancGeneratorData = async (language: Language) => {
+    try {
+        const prompt = `
+    Créez un EXAMEN BLANC complet (type B1 FLE), basé sur le guide "Groupe de FLE Caramel : évaluations de janvier 2025".
+
+    **Syllabus & Contraintes:**
+    1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
+        - Pour "Logement/Quartier", le contexte DOIT être la **Belgique** (architecture, villes comme Bruxelles/Liège).
+    2.  **Grammaire & Langue:**
+        - Temps du passé: Passé Composé, Imparfait, Plus-que-parfait.
+        - Futur: Simple, Proche, Conditionnel (souhaits, politesse).
+        - Structures: "Si j'avais... j'aurais...", "Si seulement...".
+    3.  **Sections Requises (6 au total):**
+        - I. Compréhension de l'Oral (Dialogue ~1 min)
+        - II. Compréhension de l'Écrit (Texte ~150 mots)
+        - III. Production Écrite (2 choix de sujets)
+        - IV. Interaction Orale (2 situations de jeu de rôle)
+        - V. Production Orale en Continu (2 thèmes de monologue)
+        - VI. Grammaire & Lexique (Exercices à trous, transformations)
+
+    **Format de Sortie JSON (AVEC CORRIGÉS):**
+    {
+      "listening": {
+        "text": "Texte du dialogue...",
+        "questions": [
+           { "question": "Question 1...", "answer": "Réponse correcte..." },
+           { "question": "Question 2...", "answer": "Réponse correcte..." }
+        ]
+      },
+      "reading": {
+        "text": "Texte à lire...",
+        "questions": [
+            { "question": "Question 1...", "answer": "Réponse correcte..." }
+        ],
+        "trueFalse": [
+            { "statement": "Affirmation 1", "answer": "Vrai ou Faux, car..." },
+            { "statement": "Affirmation 2", "answer": "Vrai ou Faux, car..." }
+        ]
+      },
+      "writing": {
+        "topicA": "Sujet A...",
+        "topicB": "Sujet B...",
+        "correctionModels": { "topicA": "Points clés à inclure...", "topicB": "Points clés à inclure..." }
+      },
+      "speakingInteraction": {
+         "situation1": { "title": "Titre Sit 1", "points": ["..."], "rolePlayKey": "Conseils pour l'interaction..." },
+         "situation2": { "title": "Titre Sit 2", "points": ["..."], "rolePlayKey": "Conseils pour l'interaction..." }
+      },
+      "speakingContinuous": {
+         "theme1": "Thème 1...",
+         "theme2": "Thème 2...",
+         "modelPoints": { "theme1": ["Idée 1", "Idée 2"], "theme2": ["Idée 1", "Idée 2"] }
+      },
+      "grammar": {
+         "exercise1": { "instruction": "...", "sentences": [ { "phrase": "Phrase à trou...", "answer": "Réponse complète" } ] },
+         "exercise2": { "instruction": "...", "sentences": [ { "phrase": "Phrase à compléter...", "answer": "Réponse complète" } ] },
+         "exercise3": { "instruction": "...", "sentences": [ { "phrase": "Phrase à transformer...", "answer": "Réponse transformée" } ] },
+         "lexicon": { "instruction": "...", "theme": "...", "solution": ["Mot 1", "Mot 2", "Mot 3", "Mot 4", "Mot 5"] }
+      }
+    }
+    `;
+
+        const response = await callDeepSeek(prompt, undefined, true);
+        const examData = parseJSON<any>(response);
+
+        if (examData?.listening?.text) {
+            try {
+                examData.listening.audio = await getSpeech(examData.listening.text);
+            } catch (error) {
+                console.error("Audio generation failed for Examen Blanc, proceeding without audio:", error);
+                examData.listening.audio = null;
+            }
+        }
+        return examData;
+    } catch (error: any) {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+            return await geminiService.getExamenBlancGeneratorData(language);
+        }
+        console.error("Error generating Examen Blanc Generator data", error);
+        throw new Error("Failed to generate exam.");
+    }
+};
+
