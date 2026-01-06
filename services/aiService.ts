@@ -7,6 +7,12 @@ import { VerbConjugation, QuizQuestion, Flashcard, Phrase, Language } from "../t
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const DEEPSEEK_MODEL = 'deepseek-chat';
 
+// Get API key - check multiple possible locations
+const getDeepSeekApiKey = () => {
+    // @ts-ignore - process.env is defined by vite
+    return process.env.VITE_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
+};
+
 interface DeepSeekMessage {
     role: 'system' | 'user' | 'assistant';
     content: string;
@@ -22,7 +28,7 @@ interface DeepSeekRequest {
 
 // Helper to call DeepSeek API
 const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: boolean = false): Promise<string> => {
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const apiKey = getDeepSeekApiKey();
 
     // If no DeepSeek API key, fallback to Gemini
     if (!apiKey) {

@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.API_KEY': JSON.stringify(apiKey),
       'process.env.GEMINI_API_KEY': JSON.stringify(apiKey),
-      'process.env.DEEPSEEK_API_KEY': JSON.stringify(process.env.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY)
+      'process.env.VITE_DEEPSEEK_API_KEY': JSON.stringify(process.env.VITE_DEEPSEEK_API_KEY || env.VITE_DEEPSEEK_API_KEY)
     },
     resolve: {
       alias: {
