@@ -116,6 +116,18 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
         setLoading(false);
     };
 
+    const formatDialogue = (text: string) => {
+        if (!text) return text;
+        // This regex looks for names followed by a colon (e.g., "Sophie:", "Marc :")
+        // and adds a newline before them if there isn't one already.
+        return text.replace(/([A-Z][a-zàâçéèêëîïôûù]+)\s*:/g, (match, speaker, offset) => {
+            if (offset === 0) return match;
+            const before = text.substring(0, offset);
+            if (before.endsWith('\n') || before.endsWith('\n ')) return match;
+            return '\n' + match;
+        }).replace(/\n\s*\n/g, '\n\n'); // Clean up excessive newlines
+    };
+
     const renderSections = () => {
         if (!examData) return null;
 
@@ -133,8 +145,8 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                                 </button>
                             </div>
                         )}
-                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg whitespace-pre-line text-sm text-slate-700 font-mono">
-                            {examData.listening.text}
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg whitespace-pre-line text-sm text-slate-700 font-mono leading-relaxed">
+                            {formatDialogue(examData.listening.text)}
                         </div>
                         <div className="space-y-4 mt-6">
                             <h4 className="font-bold">Questions :</h4>
@@ -165,7 +177,7 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                 content: (
                     <div className="space-y-6">
                         <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl leading-relaxed whitespace-pre-line text-slate-800">
-                            {examData.reading.text}
+                            {formatDialogue(examData.reading.text)}
                         </div>
                         <div className="space-y-4 mt-6">
                             <h4 className="font-bold">Questions :</h4>

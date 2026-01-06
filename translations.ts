@@ -153,6 +153,7 @@ export const translations: Translations = {
       resultsTitle: 'Exam Results',
       resultsSummary: 'Here is a summary of your performance in the graded sections.',
       retakeExam: 'Take another Exam',
+      showTranscription: 'Show Transcription',
     },
     examStudy: {
       title: 'Interactive Exam Study',
@@ -332,6 +333,7 @@ export const translations: Translations = {
       resultsTitle: 'نتائج الامتحان',
       resultsSummary: 'هنا ملخص لأدائك في الأقسام التي تم تقييمها.',
       retakeExam: 'إعادة الامتحان',
+      showTranscription: 'إظهار النص (نص المحادثة)',
     },
     examStudy: {
       title: 'مذاكرة تفاعلية للامتحان',

@@ -59,6 +59,16 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
     const [error, setError] = useState('');
     const { t } = useTranslation(language);
 
+    const formatDialogue = (text: string) => {
+        if (!text) return text;
+        return text.replace(/([A-Z][a-zàâçéèêëîïôûù]+)\s*:/g, (match, speaker, offset) => {
+            if (offset === 0) return match;
+            const before = text.substring(0, offset);
+            if (before.endsWith('\n') || before.endsWith('\n ')) return match;
+            return '\n' + match;
+        }).replace(/\n\s*\n/g, '\n\n');
+    };
+
     const startNewExam = async () => {
         setExamState('generating');
         setError('');
@@ -130,7 +140,19 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
             instructions={t('exam.listeningInstructions')}
             questions={examData.listening.questions}
             onComplete={(score) => handleSectionComplete('listening', score)}
-            headerContent={<AudioPlayer audioBase64={examData.listening.audio} t={t} />}
+            headerContent={
+                <div className="space-y-4">
+                    <AudioPlayer audioBase64={examData.listening.audio} t={t} />
+                    <details className="bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
+                        <summary className="px-4 py-2 text-sm font-semibold text-slate-600 cursor-pointer hover:bg-slate-200 transition-colors">
+                            {t('exam.showTranscription')}
+                        </summary>
+                        <div className="p-4 text-sm text-slate-700 whitespace-pre-line leading-relaxed font-mono">
+                            {formatDialogue(examData.listening.text)}
+                        </div>
+                    </details>
+                </div>
+            }
             icon={Headphones}
         />
     }
@@ -143,7 +165,13 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
             instructions={t('exam.readingInstructions')}
             questions={examData.reading.questions}
             onComplete={(score) => handleSectionComplete('reading', score)}
-            headerContent={<div className="p-6 bg-slate-50 border border-slate-200 rounded-xl"><p className="text-slate-700 leading-relaxed whitespace-pre-line">{examData.reading.text}</p></div>}
+            headerContent={
+                <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl shadow-inner italic">
+                    <p className="text-slate-700 leading-relaxed whitespace-pre-line">
+                        {formatDialogue(examData.reading.text)}
+                    </p>
+                </div>
+            }
             icon={BookOpen}
         />
     }

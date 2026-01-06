@@ -330,7 +330,7 @@ export const getSpeakingExample = async (promptText: string, language: Language)
 
 export const getListeningExample = async (promptText: string): Promise<{ text: string; audio: string }> => {
     try {
-        const prompt = `Pour la consigne de compréhension orale suivante: "${promptText}", générez un dialogue naturel en français (niveau B1) entre deux personnes. Le vocabulaire doit être simple et courant. Si le sujet s'y prête, utilisez un contexte belge.`;
+        const prompt = `Pour la consigne de compréhension orale suivante: "${promptText}", générez un dialogue naturel en français (niveau B1) entre deux personnes. Le vocabulaire doit être simple et courant. Si le sujet s'y prête, utilisez un contexte belge. Utilisez des sauts de ligne entre chaque intervenant (ex: Intervenant 1: ...\nIntervenant 2: ...).`;
 
         const text = await callDeepSeek(prompt);
         let audio = "";
@@ -384,7 +384,7 @@ export const getComprehensiveExamData = async (language: Language) => {
     **Structure JSON de sortie:**
     {
       "listening": {
-        "text": "Un dialogue de ~120 mots entre deux personnes sur un des thèmes, utilisant un mélange des temps requis.",
+        "text": "Un dialogue de ~120 mots entre deux personnes sur un des thèmes, utilisant un mélange des temps requis. Utilisez des sauts de ligne entre chaque intervenant (ex: Sophie: ...\nMarc: ...).",
         "questions": [ { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswerIndex": 0, "explanation": "Explication en ${language}" } ] // 4 questions
       },
       "reading": {
@@ -448,7 +448,7 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
     **Format de Sortie JSON (AVEC CORRIGÉS):**
     {
       "listening": {
-        "text": "Texte du dialogue...",
+        "text": "Texte du dialogue. Présentez le dialogue avec des sauts de ligne entre les intervenants (ex: Sophie: ...\nMarc: ...).",
         "questions": [
            { "question": "Question 1...", "answer": "Réponse correcte..." },
            { "question": "Question 2...", "answer": "Réponse correcte..." }
