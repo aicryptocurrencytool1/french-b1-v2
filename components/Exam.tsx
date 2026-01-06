@@ -143,7 +143,7 @@ const Exam: React.FC<{ language: Language }> = ({ language }) => {
             instructions={t('exam.readingInstructions')}
             questions={examData.reading.questions}
             onComplete={(score) => handleSectionComplete('reading', score)}
-            headerContent={<div className="p-6 bg-slate-50 border border-slate-200 rounded-xl max-h-64 overflow-y-auto"><p className="text-slate-700 leading-relaxed whitespace-pre-line">{examData.reading.text}</p></div>}
+            headerContent={<div className="p-6 bg-slate-50 border border-slate-200 rounded-xl"><p className="text-slate-700 leading-relaxed whitespace-pre-line">{examData.reading.text}</p></div>}
             icon={BookOpen}
         />
     }
