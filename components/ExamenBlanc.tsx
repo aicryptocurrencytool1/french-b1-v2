@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
-import { Headphones, BookOpen, PenSquare, Mic, CheckCircle, ArrowRight, Loader2, PlayCircle, Eye, EyeOff } from 'lucide-react';
-import { getSpeech, resumeAudioContext, playAudio } from '../services/geminiService';
+import { Headphones, BookOpen, PenSquare, Mic, CheckCircle, ArrowRight, Loader2, PlayCircle, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { getSpeech, resumeAudioContext, playAudio, getWritingExample, getSpeakingExample } from '../services/geminiService';
 
 interface ExamenBlancProps {
     language: Language;
@@ -50,6 +50,87 @@ const AudioPlayer: React.FC<{ text: string }> = ({ text }) => {
             {isPlaying ? <Loader2 className="animate-spin" size={20} /> : <PlayCircle size={20} />}
             Listen to Dialogue
         </button>
+    );
+};
+
+const ModelAnswerGenerator: React.FC<{ prompt: string; type: 'writing' | 'speaking'; language: Language; context?: string }> = ({ prompt, type, language, context }) => {
+    const [loading, setLoading] = useState(false);
+    const [data, setData] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const generate = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            if (type === 'writing') {
+                const res = await getWritingExample(prompt + (context ? ` Context: ${context}` : ''));
+                setData(res);
+            } else {
+                const res = await getSpeakingExample(prompt + (context ? ` Context: ${context}` : ''), language);
+                setData(res);
+            }
+        } catch (err) {
+            console.error(err);
+            setError("Failed to generate model answer. Please try again.");
+        }
+        setLoading(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center gap-2 text-blue-600 animate-pulse mt-4">
+                <Sparkles size={18} /> Generating tailored model answer...
+            </div>
+        );
+    }
+
+    if (!data) {
+        return (
+            <button
+                onClick={generate}
+                className="flex items-center gap-2 mt-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md"
+            >
+                <Sparkles size={18} /> Generate AI Model {type === 'writing' ? 'Dissertation' : 'Response'}
+            </button>
+        );
+    }
+
+    return (
+        <div className="mt-4 bg-indigo-50 border border-indigo-100 p-4 rounded-xl animate-in fade-in slide-in-from-top-2">
+            <h5 className="font-bold text-indigo-900 flex items-center gap-2 mb-2">
+                <Sparkles size={16} /> AI Model Response
+            </h5>
+            {type === 'writing' ? (
+                <div className="space-y-3">
+                    <div className="bg-white p-3 rounded border border-indigo-100 text-slate-800 whitespace-pre-wrap leading-relaxed">
+                        {data.modelAnswer}
+                    </div>
+                    {data.analysis && (
+                        <div className="text-sm text-indigo-800 bg-indigo-100/50 p-2 rounded">
+                            <strong>Analysis:</strong>
+                            <div className="prose prose-sm prose-indigo mt-1">{data.analysis}</div>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    <div className="bg-white p-3 rounded border border-indigo-100 text-slate-800 italic">
+                        "{data.text}"
+                    </div>
+                    {data.audio && (
+                        <div className="mt-2">
+                            <button
+                                onClick={() => playAudio(data.audio)}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors text-sm font-semibold"
+                            >
+                                <PlayCircle size={16} /> Listen to Response
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        </div>
     );
 };
 
@@ -187,6 +268,7 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                         <div className="p-6 border border-slate-200 rounded-xl hover:border-blue-300 transition-colors">
                             <h4 className="font-bold text-lg mb-2 text-blue-700">Sujet A</h4>
                             <p className="text-slate-700">Racontez un souvenir d'enfance heureux (une fête, un voyage, un jour spécial). Utilisez l'imparfait pour décrire et le passé composé pour les actions précises. (100-120 mots)</p>
+                            {showAnswers && <ModelAnswerGenerator language={language} type="writing" prompt="Racontez un souvenir d'enfance heureux (une fête, un voyage, un jour spécial). Utilisez l'imparfait pour décrire et le passé composé pour les actions précises." />}
                         </div>
                         <div className="p-6 border border-slate-200 rounded-xl hover:border-blue-300 transition-colors">
                             <h4 className="font-bold text-lg mb-2 text-blue-700">Sujet B</h4>
@@ -196,6 +278,7 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                                 <li>Expliquer pourquoi vous avez choisi cet endroit.</li>
                                 <li>Parler de ce que vous aimeriez changer ou améliorer à l'avenir (utilisez le conditionnel ou le futur simple). (100-120 mots)</li>
                             </ul>
+                            {showAnswers && <ModelAnswerGenerator language={language} type="writing" prompt="Vous venez de déménager dans un nouvel appartement. Écrivez un message à un ami." context="Décrire logement/quartier. Expliquer choix. Souhaits futurs." />}
                         </div>
                     </div>
                     <div className="mt-6">
@@ -236,9 +319,12 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                                 <li>Exprimez un regret sur quelque chose que vous n'avez pas pu faire. (Utilisez « Si seulement j'avais... »)</li>
                             </ul>
                             {showAnswers && (
-                                <div className="bg-white/50 p-3 rounded-lg text-rose-900 text-sm border border-rose-200">
-                                    <strong>Idées clés :</strong> "Je suis allé à...", "C'était magnifique...", "Et toi ?", "Si seulement j'avais eu plus de temps... / Si seulement il n'avait pas plu..."
-                                </div>
+                                <>
+                                    <div className="bg-white/50 p-3 rounded-lg text-rose-900 text-sm border border-rose-200">
+                                        <strong>Idées clés :</strong> "Je suis allé à...", "C'était magnifique...", "Et toi ?", "Si seulement j'avais eu plus de temps... / Si seulement il n'avait pas plu..."
+                                    </div>
+                                    <ModelAnswerGenerator language={language} type="speaking" prompt="Situation: Discuter des vacances avec un ami. Parler de l'endroit, durée, activités et exprimer un regret." />
+                                </>
                             )}
                         </div>
                         <div className="bg-rose-50 p-6 rounded-lg border border-rose-100">
@@ -249,9 +335,12 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                                 <li>Prenez congé poliment.</li>
                             </ul>
                             {showAnswers && (
-                                <div className="bg-white/50 p-3 rounded-lg text-rose-900 text-sm border border-rose-200">
-                                    <strong>Idées clés :</strong> "Bonjour, je vous appelle pour l'annonce...", "Est-ce que l'appartement est lumineux ?", "J'aimerais le visiter...", "Merci, bonne journée."
-                                </div>
+                                <>
+                                    <div className="bg-white/50 p-3 rounded-lg text-rose-900 text-sm border border-rose-200">
+                                        <strong>Idées clés :</strong> "Bonjour, je vous appelle pour l'annonce...", "Est-ce que l'appartement est lumineux ?", "J'aimerais le visiter...", "Merci, bonne journée."
+                                    </div>
+                                    <ModelAnswerGenerator language={language} type="speaking" prompt="Situation: Appeler un propriétaire pour un appartement. Demander infos, exprimer un souhait." />
+                                </>
                             )}
                         </div>
                     </div>
@@ -267,9 +356,11 @@ Quand j'avais dix ans, j'habitais avec mes parents dans un petit village. Tous l
                     <ul className="list-disc pl-5 space-y-4 text-slate-700">
                         <li>
                             <strong>Thème 1:</strong> Présentez votre personnalité idéale pour un futur travail (qualités, défauts, motivations). Utilisez le conditionnel pour exprimer vos souhaits (« J'aimerais être... », « Je serais... »).
+                            {showAnswers && <ModelAnswerGenerator language={language} type="speaking" prompt="Monologue: Présentez votre personnalité idéale pour un futur travail. Utilisez le conditionnel." />}
                         </li>
                         <li>
                             <strong>Thème 2:</strong> Décrivez votre quartier idéal. Où est-il ? Qu'est-ce qu'il y a ? Comment sont les voisins ? Pourquoi est-ce votre idéal ? Utilisez le futur simple ou le conditionnel.
+                            {showAnswers && <ModelAnswerGenerator language={language} type="speaking" prompt="Monologue: Décrivez votre quartier idéal. Utilisez le futur simple ou le conditionnel." />}
                         </li>
                     </ul>
                     {showAnswers && (
