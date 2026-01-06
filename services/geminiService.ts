@@ -345,6 +345,8 @@ export const getExamPrompts = async (): Promise<{ writing: string; speakingConti
       "speakingContinuous": "Un sujet de monologue (1-2 minutes) pour décrire une expérience ou exprimer un souhait.",
       "speakingInteraction": "Un scénario de jeu de rôle pour échanger des informations sur un des thèmes."
     }
+    **Instructions Spécifiques:**
+    - Pour les thèmes "Logement" et "Quartier", utilisez la **Belgique** comme contexte (ex: Bruxelles, Liège, maison typique en brique).
     `;
 
     try {
@@ -415,6 +417,8 @@ export const getComprehensiveExamData = async (language: Language) => {
         "interactionPrompt": "Un scénario de jeu de rôle pour une interaction orale qui nécessite d'échanger des informations sur des événements passés et futurs."
       }
     }
+    **Instructions Spécifiques:**
+    - Pour les thèmes "Logement" et "Quartier", la réponse ou le scénario DOIT se dérouler en **Belgique** (ex: Bruxelles).
     Assurez-vous que le contenu de chaque section (listening, reading, writing, speaking) reflète fidèlement les thèmes et la grammaire du syllabus.
     `;
 
@@ -526,7 +530,7 @@ export const getWritingExample = async (prompt: string): Promise<{ modelAnswer: 
         const response = await ai.models.generateContent({
             model: modelName,
             contents: `Pour la consigne de niveau B1 suivante: "${prompt}", générez un objet JSON contenant:
-            1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Utilisez un vocabulaire simple et courant (niveau A2-B1). Incluez des ** pour mettre en évidence les mots grammaticaux clés.
+            1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Utilisez un vocabulaire simple et courant (niveau A2-B1). Si le sujet concerne le logement ou le quartier, situez l'action en **Belgique** (ex: Bruxelles). Incluez des ** pour mettre en évidence les mots grammaticaux clés.
             2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1 (utilisation des temps, vocabulaire, connecteurs). Formatez l'analyse en Markdown simple avec des titres (##) et des listes (*).`,
             config: {
                 responseMimeType: "application/json",
@@ -553,7 +557,7 @@ export const getSpeakingExample = async (prompt: string, language: Language): Pr
     try {
         const textResponse = await ai.models.generateContent({
             model: modelName,
-            contents: `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${prompt}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1.`,
+            contents: `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${prompt}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1. Si le sujet concerne le logement ou le quartier, situez l'action en **Belgique** (ex: Bruxelles).`,
         });
         const text = textResponse.text || "Je ne sais pas quoi dire pour le moment.";
         const audio = await getSpeech(text);

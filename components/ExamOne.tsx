@@ -92,7 +92,7 @@ const ExamOne: React.FC<{ language: Language }> = ({ language }) => {
                         t={t} isModel />
                     <Question
                         question="Sujet 2: Décris ton logement idéal. Utilise le conditionnel (j’aimerais, je voudrais, il faudrait…)."
-                        answer="Mon logement idéal serait un appartement lumineux en centre-ville. J’aimerais qu’il ait trois pièces : un salon, une chambre et un bureau. Il faudrait un grand balcon avec des plantes. Je voudrais habiter dans un quartier calme mais animé, avec des commerces et un parc. Je pourrais me promener le week-end et rencontrer des voisins sympathiques."
+                        answer="Mon logement idéal serait un appartement lumineux à Bruxelles, près de la Grand-Place. J’aimerais qu’il ait trois pièces : un salon, une chambre et un bureau. Il faudrait un grand balcon avec des plantes. Je voudrais habiter dans un quartier animé comme Ixelles, avec des commerces et un parc. Je pourrais me promener le week-end et rencontrer des voisins sympathiques."
                         t={t} isModel />
                 </div>
             </div>
