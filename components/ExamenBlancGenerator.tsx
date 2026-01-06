@@ -96,6 +96,7 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
     const [currentSection, setCurrentSection] = useState(0);
     const [showAnswers, setShowAnswers] = useState(false);
     const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+    const [audioLoading, setAudioLoading] = useState(false);
 
     const handleInputChange = (key: string, value: string) => {
         setUserAnswers(prev => ({ ...prev, [key]: value }));
@@ -137,14 +138,32 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                 icon: <Headphones size={24} className="text-blue-600" />,
                 content: (
                     <div className="space-y-6">
-                        <p className="text-slate-600">Lisez le texte (ou écoutez-le s'il est disponible) et répondez aux questions.</p>
-                        {examData.listening.audio && (
-                            <div className="mb-4">
-                                <button className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-semibold" onClick={() => playAudio(examData.listening.audio)}>
-                                    <PlayCircle size={20} /> Listen to Dialogue
-                                </button>
-                            </div>
-                        )}
+                        <p className="text-slate-600">Écoutez le dialogue et répondez aux questions. (Vous pouvez aussi lire la transcription ci-dessous.)</p>
+                        <div className="mb-4">
+                            <button
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-semibold disabled:opacity-50"
+                                onClick={async () => {
+                                    if (!examData.listening.audio) {
+                                        setAudioLoading(true);
+                                        try {
+                                            const audio = await getSpeech(examData.listening.text);
+                                            setExamData({ ...examData, listening: { ...examData.listening, audio } });
+                                            await playAudio(audio);
+                                        } catch (e) {
+                                            console.error('Audio generation failed:', e);
+                                            alert('Failed to generate audio. Please try again.');
+                                        }
+                                        setAudioLoading(false);
+                                    } else {
+                                        playAudio(examData.listening.audio);
+                                    }
+                                }}
+                                disabled={audioLoading}
+                            >
+                                {audioLoading ? <Loader2 className="animate-spin" size={20} /> : <PlayCircle size={20} />}
+                                {audioLoading ? 'Generating Audio...' : 'Listen to Dialogue'}
+                            </button>
+                        </div>
                         <details className="bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
                             <summary className="px-4 py-2 text-sm font-semibold text-slate-600 cursor-pointer hover:bg-slate-200 transition-colors">
                                 Show Transcription
