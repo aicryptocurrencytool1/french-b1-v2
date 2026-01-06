@@ -334,10 +334,10 @@ export const getExamPrompts = async (): Promise<{ writing: string; speakingConti
     const prompt = `
     Générez 3 sujets d'examen de français niveau B1 basés sur le syllabus suivant. Le vocabulaire doit être STRICTEMENT de niveau A2-B1 (simple et courant). Retournez un seul objet JSON valide.
 
-    **Syllabus:**
-    - **Thèmes:** Logement, quartier, enfance, projets futurs, expériences personnelles.
-    - **Tâches:** Raconter un événement, décrire, donner son avis, exprimer un souhait.
-    - **Grammaire:** Utiliser un mélange de passé composé, imparfait, et conditionnel.
+    **Syllabus (Strict):**
+    - **Savoir:** Raconter un événement au passé, présenter son logement/quartier, exprimer des souhaits, résumer un fait divers.
+    - **Langue:** Passé composé, Imparfait, Plus-que-parfait, Conditionnel, Futur simple/proche.
+    - **Structures:** "Si j'avais... j'aurais...", "Si seulement...".
 
     **Structure JSON:**
     {
@@ -383,19 +383,19 @@ export const getComprehensiveExamData = async (language: Language) => {
     const prompt = `
     Créez un examen complet de français niveau B1, en respectant scrupuleusement le syllabus fourni. Le vocabulaire doit être STRICTEMENT adapté au niveau A2-B1 (mots fréquents et simples). Retournez un seul objet JSON valide.
 
-    **Syllabus Clés:**
-    1.  **Thèmes:** Logement, quartier, enfance, projets futurs, expériences personnelles.
-    2.  **Compétences à évaluer:**
-        - Raconter un événement passé (oral et écrit).
-        - Décrire des situations, des habitudes (imparfait).
+    **Syllabus Clés (Strict):**
+    1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
+    2.  **Savoir (Compétences):**
+        - Raconter un événement au passé en articulant les temps (PC, Imparfait, PQP).
         - Présenter son logement ou son quartier.
         - Exprimer des souhaits (conditionnel).
-        - Échanger des informations et donner son avis.
-    3.  **Grammaire obligatoire:**
-        - Utilisation mixte des temps du passé : Passé composé, Imparfait, Plus-que-parfait.
-        - Présent (indicatif et conditionnel).
-        - Futur (simple et proche).
-        - Structures hypothétiques (ex: "Si j'avais su, j'aurais fait...").
+        - Résumer un fait divers.
+        - Exprimer des actions futures.
+    3.  **Langue (Grammaire):**
+        - Passé: Imparfait, Plus-que-parfait, Passé composé.
+        - Présent: Indicatif et Conditionnel.
+        - Futur: Simple et Proche.
+        - Structures: "Si j'avais..., j'aurais..." / "Si seulement il avait fait ça !".
 
     **Structure JSON de sortie:**
     {
