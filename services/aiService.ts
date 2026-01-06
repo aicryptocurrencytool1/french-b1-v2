@@ -98,14 +98,15 @@ export const resumeAudioContext = geminiService.resumeAudioContext;
 // Text generation functions using DeepSeek
 export const getGrammarExplanation = async (topicTitle: string, language: Language): Promise<string> => {
     try {
+        const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
         const prompt = `Explain the French B1 grammar topic: "${topicTitle}". 
 Provide the explanation in ${language} language.
 Structure the response with clear headings, bullet points, and plenty of examples.
-Focus on usage, formation, and common mistakes.
+Focus on usage, formation, and common mistakes (especially choosing the correct auxiliary 'être' vs 'avoir' for compound tenses).
 Format the entire response using simple Markdown. Use ## for headings, * for bullet points, and ** for important words. Do not use any other Markdown features like blockquotes or code blocks.
 Ensure examples are marked. Use a double newline to separate paragraphs.`;
 
-        return await callDeepSeek(prompt);
+        return await callDeepSeek(prompt, systemPrompt);
     } catch (error: any) {
         if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
             return await geminiService.getGrammarExplanation(topicTitle, language);
@@ -117,8 +118,15 @@ Ensure examples are marked. Use a double newline to separate paragraphs.`;
 
 export const getVerbConjugation = async (verb: string, language: Language): Promise<VerbConjugation> => {
     try {
+        const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
         const prompt = `Conjugate the French verb "${verb}" for a B1 student. 
 Provide the translation in ${language}.
+
+**AUXILIARY RULES:**
+- For Passé Composé and Plus-que-parfait, use **être** if the verb is reflexive or among the 17 movement verbs (DR & MRS VANDERTRAMP like partir, arriver, venir, etc.).
+- Use **avoir** for others.
+- Ensure past participle agreement where necessary.
+
 Return ONLY a valid JSON object with this exact structure:
 {
   "verb": "${verb}",
@@ -134,7 +142,7 @@ Return ONLY a valid JSON object with this exact structure:
   }
 }`;
 
-        const response = await callDeepSeek(prompt, undefined, true);
+        const response = await callDeepSeek(prompt, systemPrompt, true);
         return parseJSON<VerbConjugation>(response);
     } catch (error: any) {
         if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
@@ -146,18 +154,28 @@ Return ONLY a valid JSON object with this exact structure:
 
 export const getQuiz = async (topicTitle: string, language: Language): Promise<QuizQuestion[]> => {
     try {
+        const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
         const prompt = `Generate a JSON array of exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}".
-The questions and options must be in French.
-The explanation for the correct answer must be in ${language}.
-Return ONLY a valid JSON array with this structure:
-[{
-  "question": "question text in French",
-  "options": ["option1", "option2", "option3", "option4"],
-  "correctAnswerIndex": 0,
-  "explanation": "explanation in ${language}"
-}]`;
+        
+        **CRITICAL RULES:**
+        1. **Auxiliary Verbs:** In compound tenses (Passé Composé, Plus-que-parfait, etc.), ensure the correct auxiliary is used:
+           - Use **être** for the 17 verbs of movement/change of state (DR & MRS VANDERTRAMP: devenir, revenir, monter, rester, sortir, venir, aller, naître, descendre, entrer, rentrer, tomber, retourner, arriver, mourir, partir, passer).
+           - Use **être** for all reflexive/pronominal verbs.
+           - Use **avoir** for other verbs.
+        2. **Agreement:** Past participles must agree with the subject when using 'être'.
+        3. **Logic:** The correct answer MUST be grammatically perfect. Double-check your logic before generating.
+        
+        The questions and options must be in French.
+        The explanation for the correct answer must be in ${language}.
+        Return ONLY a valid JSON array with this structure:
+        [{
+          "question": "question text in French",
+          "options": ["option1", "option2", "option3", "option4"],
+          "correctAnswerIndex": 0,
+          "explanation": "explanation in ${language}"
+        }]`;
 
-        const response = await callDeepSeek(prompt, undefined, true);
+        const response = await callDeepSeek(prompt, systemPrompt, true);
         return parseJSON<QuizQuestion[]>(response);
     } catch (error: any) {
         if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
@@ -401,10 +419,11 @@ export const getComprehensiveExamData = async (language: Language) => {
     }
     **Instructions Spécifiques:**
     - Pour les thèmes "Logement" and "Quartier", la réponse ou le scénario DOIT se dérouler en **Belgique** (ex: Bruxelles).
+    - **RÈGLE D'OR GRAMMATICALE:** Vérifiez scrupuleusement le choix de l'auxiliaire (être vs avoir) pour le Passé Composé et le Plus-que-parfait (ex: partir, arriver, entrer utilisent 'être').
     Assurez-vous que le contenu de chaque section (listening, reading, writing, speaking) reflète fidèlement les thèmes et la grammaire du syllabus.
     `;
 
-        const response = await callDeepSeek(prompt.replace('${language}', language), undefined, true);
+        const response = await callDeepSeek(prompt.replace('${language}', language), "Expert French Teacher", true);
         const examData = parseJSON<any>(response);
 
         // Fetch audio for the listening text using Gemini TTS
@@ -484,10 +503,13 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
          "exercise3": { "instruction": "...", "sentences": [ { "phrase": "Phrase à transformer...", "answer": "Réponse transformée" } ] },
          "lexicon": { "instruction": "...", "theme": "...", "solution": ["Mot 1", "Mot 2", "Mot 3", "Mot 4", "Mot 5"] }
       }
-    }
+    **RÈGLES DE VALIDATION:**
+    - Vérifiez que les réponses aux questions de grammaire sont 100% correctes.
+    - **CRUCIAL:** Pour les verbes au passé composé ou plus-que-parfait, utilisez scrupuleusement le bon auxiliaire (**être** pour partir, arriver, entrer, etc., et les verbes pronominaux).
+    - Pour les thèmes belges, restez cohérent.
     `;
 
-        const response = await callDeepSeek(prompt, undefined, true);
+        const response = await callDeepSeek(prompt, "Expert French Teacher", true);
         const examData = parseJSON<any>(response);
 
         if (examData?.listening?.text) {
