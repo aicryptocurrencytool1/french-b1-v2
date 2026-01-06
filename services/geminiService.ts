@@ -5,7 +5,7 @@ import { dbService } from './dbService';
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // FIX: Updated model name to a recommended one for better performance.
-const modelName = 'gemini-1.5-flash-002';
+const modelName = 'gemini-1.5-pro';
 
 // --- Helper Functions ---
 
