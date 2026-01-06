@@ -313,7 +313,10 @@ export const getWritingFeedback = async (promptText: string, userText: string, l
 export const getWritingExample = async (promptText: string): Promise<{ modelAnswer: string; analysis: string; }> => {
     try {
         const prompt = `Pour la consigne de niveau B1 suivante: "${promptText}", générez un objet JSON contenant:
-        1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Utilisez un vocabulaire simple et courant (niveau A2-B1). Si le sujet concerne le logement ou le quartier, situez l'action en **Belgique** (ex: Bruxelles). Incluez des ** pour mettre en évidence les mots grammaticaux clés.
+        1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Utilisez un vocabulaire simple et courant (niveau A2-B1). 
+           - Si le sujet concerne le **logement** ou le **quartier**, situez l'action à **Liège** (Belgique).
+           - Si le sujet concerne l'**enfance** ou des **souvenirs**, situez l'action au **Liban**.
+           Mettez en gras (**mot**) les verbes conjugués et les connecteurs logiques.
         2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1 (utilisation des temps, vocabulaire, connecteurs). Formatez l'analyse en Markdown simple avec des titres (##) et des listes (*).`;
 
         const response = await callDeepSeek(prompt, undefined, true);
@@ -328,7 +331,9 @@ export const getWritingExample = async (promptText: string): Promise<{ modelAnsw
 
 export const getSpeakingExample = async (promptText: string, language: Language): Promise<{ text: string; audio: string }> => {
     try {
-        const prompt = `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${promptText}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1. Si le sujet concerne le logement ou le quartier, situez l'action en **Belgique** (ex: Bruxelles).`;
+        const prompt = `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${promptText}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1. 
+        - Si le sujet concerne le **logement** ou le **quartier**, situez l'action à **Liège** (Belgique).
+        - Si le sujet concerne l'**enfance** ou des **souvenirs**, situez l'action au **Liban**.`;
 
         const text = await callDeepSeek(prompt);
         let audio = "";
@@ -451,7 +456,8 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
 
     **Syllabus & Contraintes:**
     1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
-        - Pour "Logement/Quartier", le contexte DOIT être la **Belgique** (architecture, villes comme Bruxelles/Liège).
+        - Pour "Logement/Quartier", le contexte DOIT être la ville de **Liège** (Belgique).
+        - Pour "Enfance/Souvenirs", le contexte DOIT être le **Liban**.
     2.  **Grammaire & Langue:**
         - Temps du passé: Passé Composé, Imparfait, Plus-que-parfait.
         - Futur: Simple, Proche, Conditionnel (souhaits, politesse).

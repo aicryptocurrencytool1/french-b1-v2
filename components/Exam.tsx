@@ -7,12 +7,18 @@ import { getWritingFeedback, getSpeakingExample } from '../services/aiService';
 
 // Re-usable FormattedContent component from Grammar.tsx
 const renderInlineFormatting = (text: string) => {
+    // Split by bold patterns
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={i} className="font-semibold text-blue-600 bg-blue-100 px-1 rounded">{part.slice(2, -2)}</strong>;
+        // If it's a bold block, render it styled
+        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+            // Clean content inside bold tags just in case
+            const content = part.slice(2, -2).replace(/\*\*/g, '');
+            return <strong key={i} className="font-semibold text-blue-600 bg-blue-100 px-1 rounded">{content}</strong>;
         }
-        return part;
+        // For regular text parts, we simply remove any stray "**" that might have been left over
+        // This "cleans" the text if the AI made a mistake like "word**" or "**word"
+        return part.replace(/\*\*/g, '');
     });
 };
 
