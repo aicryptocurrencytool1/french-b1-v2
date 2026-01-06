@@ -614,3 +614,132 @@ export const getReadingExample = async (prompt: string): Promise<{ text: string 
         throw error;
     }
 };
+
+export const getExamenBlancGeneratorData = async (language: Language) => {
+    const prompt = `
+    Créez un EXAMEN BLANC complet (type B1 FLE), basé sur le guide "Groupe de FLE Caramel : évaluations de janvier 2025".
+
+    **Syllabus & Contraintes:**
+    1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
+        - Pour "Logement/Quartier", le contexte DOIT être la **Belgique** (architecture, villes comme Bruxelles/Liège).
+    2.  **Grammaire & Langue:**
+        - Temps du passé: Passé Composé, Imparfait, Plus-que-parfait.
+        - Futur: Simple, Proche, Conditionnel (souhaits, politesse).
+        - Structures: "Si j'avais... j'aurais...", "Si seulement...".
+    3.  **Sections Requises (6 au total):**
+        - I. Compréhension de l'Oral (Dialogue ~1 min)
+        - II. Compréhension de l'Écrit (Texte ~150 mots)
+        - III. Production Écrite (2 choix de sujets)
+        - IV. Interaction Orale (2 situations de jeu de rôle)
+        - V. Production Orale en Continu (2 thèmes de monologue)
+        - VI. Grammaire & Lexique (Exercices à trous, transformations)
+
+    **Format de Sortie JSON:**
+    {
+      "listening": {
+        "text": "Texte du dialogue...",
+        "questions": ["Question 1 (1 point)...", "Question 2 (1 point)..."] // 5 questions ouvertes
+      },
+      "reading": {
+        "text": "Texte à lire...",
+        "questions": ["Question 1...", "Question 2..."], // 4 questions ouvertes
+        "trueFalse": ["Affirmation 1 (V/F)", "Affirmation 2 (V/F)", "Affirmation 3 (V/F)"] // 3-4 affirmations
+      },
+      "writing": {
+        "topicA": "Sujet A (Raconter souvenir...)",
+        "topicB": "Sujet B (Email déménagement...)"
+      },
+      "speakingInteraction": {
+         "situation1": { "title": "Titre Sit 1", "points": ["Point 1", "Point 2", "Point 3"] },
+         "situation2": { "title": "Titre Sit 2", "points": ["Point 1", "Point 2", "Point 3"] }
+      },
+      "speakingContinuous": {
+         "theme1": "Thème 1 (Description...)",
+         "theme2": "Thème 2 (Projets...)"
+      },
+      "grammar": {
+         "exercise1": { "instruction": "Mettez les verbes au passé...", "sentences": ["Phrase 1...", "Phrase 2..."] },
+         "exercise2": { "instruction": "Complétez avec futur/conditionnel...", "sentences": ["Phrase 1...", "Phrase 2..."] },
+         "exercise3": { "instruction": "Transformez avec 'Si seulement'...", "sentences": ["Phrase 1...", "Phrase 2..."] },
+         "lexicon": { "instruction": "Trouvez 5 mots sur le thème...", "theme": "Logement/Quartier" }
+      }
+    }
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        listening: {
+                            type: Type.OBJECT,
+                            properties: {
+                                text: { type: Type.STRING },
+                                questions: { type: Type.ARRAY, items: { type: Type.STRING } }
+                            },
+                            required: ["text", "questions"]
+                        },
+                        reading: {
+                            type: Type.OBJECT,
+                            properties: {
+                                text: { type: Type.STRING },
+                                questions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                trueFalse: { type: Type.ARRAY, items: { type: Type.STRING } }
+                            },
+                            required: ["text", "questions", "trueFalse"]
+                        },
+                        writing: {
+                            type: Type.OBJECT,
+                            properties: {
+                                topicA: { type: Type.STRING },
+                                topicB: { type: Type.STRING },
+                            },
+                            required: ["topicA", "topicB"]
+                        },
+                        speakingInteraction: {
+                            type: Type.OBJECT,
+                            properties: {
+                                situation1: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, points: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["title", "points"] },
+                                situation2: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, points: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["title", "points"] }
+                            },
+                            required: ["situation1", "situation2"]
+                        },
+                        speakingContinuous: {
+                            type: Type.OBJECT,
+                            properties: {
+                                theme1: { type: Type.STRING },
+                                theme2: { type: Type.STRING },
+                            },
+                            required: ["theme1", "theme2"]
+                        },
+                        grammar: {
+                            type: Type.OBJECT,
+                            properties: {
+                                exercise1: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["instruction", "sentences"] },
+                                exercise2: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["instruction", "sentences"] },
+                                exercise3: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, sentences: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ["instruction", "sentences"] },
+                                lexicon: { type: Type.OBJECT, properties: { instruction: { type: Type.STRING }, theme: { type: Type.STRING } }, required: ["instruction", "theme"] },
+                            },
+                            required: ["exercise1", "exercise2", "exercise3", "lexicon"]
+                        }
+                    },
+                    required: ["listening", "reading", "writing", "speakingInteraction", "speakingContinuous", "grammar"]
+                }
+            }
+        });
+
+        const examData = parseGeminiJson<any>(response.text);
+        if (examData?.listening?.text) {
+            examData.listening.audio = await getSpeech(examData.listening.text);
+        }
+        return examData;
+
+    } catch (e) {
+        console.error("Error generating Examen Blanc Generator data", e);
+        throw new Error("Failed to generate exam.");
+    }
+};

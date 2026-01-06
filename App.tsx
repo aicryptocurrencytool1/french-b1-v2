@@ -13,6 +13,8 @@ import Exam from './components/Exam';
 import ExamStudy from './components/ExamStudy';
 import ExamOne from './components/ExamOne';
 import EssayWriter from './components/EssayWriter';
+import ExamenBlanc from './components/ExamenBlanc';
+import ExamenBlancGenerator from './components/ExamenBlancGenerator';
 import { AppView, Language } from './types';
 import { useTranslation } from './hooks/useTranslation';
 
@@ -55,20 +57,24 @@ const App: React.FC = () => {
         return <ExamStudy language={currentLanguage} />;
       case AppView.EXAM_ONE:
         return <ExamOne language={currentLanguage} />;
+      case AppView.EXAMEN_BLANC:
+        return <ExamenBlanc language={currentLanguage} />;
+      case AppView.EXAMEN_BLANC_GENERATOR:
+        return <ExamenBlancGenerator language={currentLanguage} />;
       case AppView.ESSAY_WRITER:
         return <EssayWriter language={currentLanguage} />;
       default:
-        return <Dashboard setView={setCurrentView} t={t}/>;
+        return <Dashboard setView={setCurrentView} t={t} />;
     }
   };
 
   return (
-    <Layout 
-        currentView={currentView} 
-        setView={setCurrentView} 
-        currentLanguage={currentLanguage} 
-        setLanguage={setCurrentLanguage}
-        t={t}
+    <Layout
+      currentView={currentView}
+      setView={setCurrentView}
+      currentLanguage={currentLanguage}
+      setLanguage={setCurrentLanguage}
+      t={t}
     >
       {renderView()}
     </Layout>
