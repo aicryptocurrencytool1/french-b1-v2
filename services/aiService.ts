@@ -233,7 +233,9 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
         return questions;
     } catch (error: any) {
         console.warn("DeepSeek quiz generation failed, falling back to Gemini:", error);
-        return await geminiService.getQuiz(topicTitle, language);
+        const geminiQuiz = await geminiService.getQuiz(topicTitle, language);
+        if (!geminiQuiz || geminiQuiz.length === 0) throw new Error("Both DeepSeek and Gemini failed to generate the quiz.");
+        return geminiQuiz;
     }
 };
 
@@ -560,7 +562,9 @@ export const getExamenBlancGeneratorData = async (language: Language): Promise<a
         return examData;
     } catch (error: any) {
         console.warn("DeepSeek Examen Blanc generation failed, falling back to Gemini:", error);
-        return await geminiService.getExamenBlancGeneratorData(language);
+        const geminiData = await geminiService.getExamenBlancGeneratorData(language);
+        if (!geminiData) throw new Error("Both DeepSeek and Gemini failed to generate exam data.");
+        return geminiData;
     }
 };
 

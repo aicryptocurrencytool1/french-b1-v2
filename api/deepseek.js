@@ -42,7 +42,7 @@ export default async function handler(req) {
 
         console.log('Fetching DeepSeek with 22s safety timeout...');
 
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

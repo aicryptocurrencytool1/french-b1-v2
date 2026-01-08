@@ -4,9 +4,9 @@ import { dbService } from './dbService';
 import { getUserContext } from "../userProfile";
 
 // Fallback to Gemini keys only
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.VITE_API_KEY;
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY || "" });
-const modelName = 'gemini-1.5-flash-latest'; // More robust model identifier
+const GEMINI_API_KEY = (typeof process !== 'undefined' && process.env.GEMINI_API_KEY) || (typeof process !== 'undefined' && process.env.VITE_API_KEY) || "";
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const modelName = 'gemini-1.5-flash'; // Standardized model name
 
 const parseGeminiJson = <T>(text: string | undefined): T => {
     if (!text) {
@@ -171,8 +171,10 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
         }],
         config: { responseMimeType: "application/json" }
     });
-    const parsed = parseGeminiJson<{ questions: QuizQuestion[] }>(response.candidates?.[0]?.content?.parts?.[0]?.text);
-    return parsed.questions || [];
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("No text from Gemini");
+    const parsed = parseGeminiJson<{ questions: QuizQuestion[] }>(text);
+    return parsed?.questions || [];
 };
 
 export const getFlashcards = async (category: string, language: Language): Promise<Flashcard[]> => {
