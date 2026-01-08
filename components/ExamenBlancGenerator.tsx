@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import { Loader2, PlayCircle, Eye, EyeOff, RefreshCw, PenSquare, MessageCircle, Mic, Sparkles, Headphones, ArrowRight } from 'lucide-react';
-import { getExamenBlancGeneratorData, getSpeech, playAudio, getWritingExample, getSpeakingExample } from '../services/aiService';
+import { getExamenBlancGeneratorData, getSpeech, playAudio, getWritingExample, getSpeakingExample, getWritingFeedback } from '../services/aiService';
 import { Language } from '../types';
 
 interface ExamenBlancGeneratorProps {
@@ -84,6 +84,78 @@ const ModelAnswerGenerator: React.FC<{ prompt: string; type: 'writing' | 'speaki
                     )}
                 </div>
             )}
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        </div>
+    );
+};
+
+const WritingCorrection: React.FC<{ prompt: string; userText: string; language: Language; t: any }> = ({ prompt, userText, language, t }) => {
+    const [loading, setLoading] = useState(false);
+    const [feedback, setFeedback] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const getCorrection = async () => {
+        if (!userText.trim()) {
+            alert(t('examStudy.yourText'));
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await getWritingFeedback(prompt, userText, language);
+            setFeedback(res);
+        } catch (err) {
+            console.error(err);
+            setError("Failed to get AI feedback. Please try again.");
+        }
+        setLoading(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center gap-2 text-green-600 animate-pulse mt-4">
+                <Loader2 size={18} className="animate-spin" /> {t('exam.analyzing')}
+            </div>
+        );
+    }
+
+    if (feedback) {
+        return (
+            <div className="mt-4 bg-green-50 border border-green-100 p-5 rounded-xl animate-in fade-in slide-in-from-top-2">
+                <h5 className="font-bold text-green-900 flex items-center gap-2 mb-3">
+                    <PenSquare size={18} /> {t('exam.feedbackTitle')}
+                </h5>
+                <div className="prose prose-sm prose-slate max-w-none text-slate-800 leading-relaxed text-left">
+                    <div className="bg-white/50 p-4 rounded-lg border border-green-100 italic mb-4">
+                        "{userText}"
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-green-100 shadow-sm">
+                        {feedback.split('\n').map((line, i) => (
+                            <p key={i} className={line.startsWith('##') ? 'font-bold text-lg mt-4 mb-2 text-green-800' : 'mb-2'}>
+                                {line.replace(/##\s*/, '').replace(/\*\*/g, '')}
+                            </p>
+                        ))}
+                    </div>
+                </div>
+                <button
+                    onClick={() => setFeedback(null)}
+                    className="mt-4 text-sm text-green-700 hover:underline font-medium"
+                >
+                    {t('soraliaExercises.reset')} & {t('examStudy.getFeedback')}
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-4">
+            <button
+                onClick={getCorrection}
+                disabled={!userText.trim()}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed group"
+            >
+                <PenSquare size={18} className="group-hover:scale-110 transition-transform" /> {t('exam.correctWriting')}
+            </button>
             {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </div>
     );
@@ -279,11 +351,17 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                         <div className="mt-6">
                             <label className="block text-slate-800 font-bold mb-2">Votre Rédaction:</label>
                             <textarea
-                                className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-64"
+                                className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-64 shadow-inner"
                                 placeholder="Écrivez votre texte ici..."
                                 value={userAnswers[`writing`] || ''}
                                 onChange={(e) => handleInputChange(`writing`, e.target.value)}
                             ></textarea>
+                            <WritingCorrection
+                                language={language}
+                                prompt={examData.writing.topicA + " OR " + examData.writing.topicB}
+                                userText={userAnswers[`writing`] || ''}
+                                t={t}
+                            />
                         </div>
                     </div>
                 )

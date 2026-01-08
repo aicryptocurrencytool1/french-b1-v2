@@ -8,10 +8,12 @@ import { getUserContext } from '../userProfile';
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const DEEPSEEK_MODEL = 'deepseek-chat';
 
-// Get API key - check multiple possible locations
 const getDeepSeekApiKey = () => {
     // @ts-ignore - process.env is defined by vite
-    return process.env.VITE_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
+    const key = process.env.VITE_DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
+    // Check if it's an empty string or the literal string "undefined" (sometimes happens with Vite define)
+    if (!key || key === 'undefined' || key === 'null') return null;
+    return key;
 };
 
 interface DeepSeekMessage {
@@ -320,11 +322,13 @@ export const getWritingExample = async (promptText: string): Promise<{ modelAnsw
     try {
         const userContext = getUserContext();
         const prompt = `Pour la consigne de niveau B1 suivante: "${promptText}", générez un objet JSON contenant:
-        1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Utilisez un vocabulaire simple et courant (niveau A2-B1). 
+        1. Un texte modèle ('modelAnswer') en français qui répond parfaitement à la consigne. 
            ${userContext}
+           **RÈGLE CRUCIALE :** Le texte doit faire EXACTEMENT entre **8 et 10 phrases**.
+           Utilisez un vocabulaire simple (A2-B1) et les TEMPS VERBAUX les plus appropriés à la situation.
            Utilisez les informations du profil ci-dessus pour créer une réponse PERSONNALISÉE et RÉALISTE.
            Mettez en gras (**mot**) les verbes conjugués et les connecteurs logiques.
-        2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1 (utilisation des temps, vocabulaire, connecteurs). Formatez l'analyse en Markdown simple avec des titres (##) et des listes (*).`;
+        2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1. Formatez l'analyse en Markdown simple.`;
 
         const response = await callDeepSeek(prompt, undefined, true);
         return parseJSON<{ modelAnswer: string; analysis: string; }>(response);
@@ -339,9 +343,11 @@ export const getWritingExample = async (promptText: string): Promise<{ modelAnsw
 export const getSpeakingExample = async (promptText: string, language: Language): Promise<{ text: string; audio: string }> => {
     try {
         const userContext = getUserContext();
-        const prompt = `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${promptText}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1. 
+        const prompt = `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${promptText}". 
+        La réponse doit être naturelle et fluide.
         ${userContext}
-        Utilisez les informations du profil ci-dessus pour créer une réponse PERSONNALISÉE et RÉALISTE qui reflète la vie de l'étudiant.`;
+        **RÈGLE CRUCIALE :** Le texte doit faire EXACTEMENT entre **8 et 10 phrases**.
+        Utilisez les TEMPS VERBAUX les plus appropriés à la situation et les informations du profil ci-dessus pour créer une réponse PERSONNALISÉE.`;
 
         const text = await callDeepSeek(prompt);
         let audio = "";

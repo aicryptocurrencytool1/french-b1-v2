@@ -70,5 +70,8 @@ export const getUserContext = (): string => {
 **Instructions grammaticales prioritaires :**
 Utilisez les temps suivants : ${userProfile.grammarEmphasis.join(', ')}. 
 Incorporez des phrases avec "Si seulement..." pour exprimer des regrets.
+
+**CONTRAINTES DE LONGUEUR :**
+Tous les textes modèles (modelAnswer, text) doivent être CONCIS : faites exactement **8 à 10 phrases**. Pas plus, pas moins.
     `.trim();
 };

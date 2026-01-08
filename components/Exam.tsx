@@ -383,27 +383,32 @@ const WritingSection: React.FC<{
                     rows={8}
                     className="w-full p-4 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition"
                     placeholder="Écrivez votre texte ici..."
-                    disabled={!!feedback || !!modelAnswer}
                 />
-                {!feedback && !modelAnswer && (
-                    <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                    <button
+                        onClick={handleAnalyze}
+                        disabled={loading || !userText.trim()}
+                        className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors shadow-lg shadow-green-500/30 flex justify-center items-center gap-2"
+                    >
+                        {loading ? <><Loader2 className="animate-spin" size={20} /> {t('exam.analyzing')}</> : t('exam.correctWriting')}
+                    </button>
+                    <button
+                        onClick={handleShowModel}
+                        disabled={loading || loadingModel}
+                        className="flex-1 sm:flex-auto py-3 px-6 bg-slate-600 text-white font-bold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors flex justify-center items-center gap-2"
+                    >
+                        {loadingModel ? <Loader2 className="animate-spin" size={20} /> : <Wand2 size={20} />}
+                        {t('examStudy.showExample')}
+                    </button>
+                    {feedback && (
                         <button
-                            onClick={handleAnalyze}
-                            disabled={loading || !userText.trim()}
-                            className="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors shadow-lg shadow-green-500/30 flex justify-center items-center gap-2"
+                            onClick={() => onComplete(feedback, userText)}
+                            className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30 font-bold"
                         >
-                            {loading ? <><Loader2 className="animate-spin" size={20} /> {t('exam.analyzing')}</> : t('exam.submitAndAnalyze')}
+                            {t('exam.confirmNext')}
                         </button>
-                        <button
-                            onClick={handleShowModel}
-                            disabled={loading || loadingModel || !!userText.trim()}
-                            className="flex-1 sm:flex-auto py-3 px-6 bg-slate-600 text-white font-bold rounded-xl hover:bg-slate-700 disabled:opacity-50 transition-colors flex justify-center items-center gap-2"
-                        >
-                            {loadingModel ? <Loader2 className="animate-spin" size={20} /> : <Wand2 size={20} />}
-                            {t('examStudy.showExample')}
-                        </button>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
             {modelAnswer && (
@@ -418,8 +423,8 @@ const WritingSection: React.FC<{
                         <FormattedContent text={modelAnswer.analysis} />
                     </div>
 
-                    <button onClick={() => onComplete('', '')} className="mt-6 w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
-                        {t('exam.nextSection')}
+                    <button onClick={() => setModelAnswer(null)} className="mt-6 w-full py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors">
+                        Close Example
                     </button>
                 </div>
             )}
@@ -428,8 +433,8 @@ const WritingSection: React.FC<{
                 <div className="bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 mt-8 animate-in fade-in">
                     <h3 className="text-xl font-bold font-heading mb-4 text-slate-800">{t('exam.feedbackTitle')}</h3>
                     <FormattedContent text={feedback} />
-                    <button onClick={() => onComplete(feedback, userText)} className="mt-6 w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">
-                        {t('exam.nextSection')}
+                    <button onClick={() => setFeedback('')} className="mt-6 w-full py-3 bg-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-300 transition-colors">
+                        Hide Feedback & Keep Writing
                     </button>
                 </div>
             )}
