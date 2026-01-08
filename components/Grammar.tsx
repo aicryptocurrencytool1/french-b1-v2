@@ -111,9 +111,15 @@ const Grammar: React.FC<GrammarProps> = ({ language }) => {
       setExplanation(localizedExplanation || "Explanation not available for this language.");
       setLoading(false);
     } else {
-      const text = await getGrammarExplanation(topic.title, language);
-      setExplanation(text);
-      setLoading(false);
+      try {
+        const text = await getGrammarExplanation(topic.title, language);
+        setExplanation(text);
+      } catch (err) {
+        console.error(err);
+        setExplanation("Sorry, I couldn't generate the explanation at this time. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

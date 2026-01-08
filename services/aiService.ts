@@ -122,13 +122,25 @@ export const getGrammarExplanation = async (topicTitle: string, language: Langua
     try {
         const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
         const userContext = getUserContext();
-        const prompt = `Explain the French B1 grammar topic: "${topicTitle}". 
+        const prompt = `Explain the French B1 grammar topic: "${topicTitle}" for a student named Ahmad. 
 Provide the explanation in ${language} language.
 ${userContext}
-Structure the response with clear headings, bullet points, and plenty of examples.
-Focus on usage, formation, and common mistakes (especially choosing the correct auxiliary 'être' vs 'avoir' for compound tenses).
-Format the entire response using simple Markdown. Use ## for headings, * for bullet points, and ** for important words.
-Ensure examples are marked. Use a double newline to separate paragraphs.`;
+
+**PEDAGOGICAL STYLE:**
+- Use the "For Dummies" approach: simple, clear, and relatable.
+- Use fun metaphors (like "Action Movie Star" for Passé Composé or "Scenery Painter" for Imparfait) if applicable to the topic.
+- Structure each section as: 
+  1. **Son Job (Its Job):** A simple explanation of why we use it.
+  2. **Dans l'histoire (In the Story):** A clear example using Ahmad's context (Liège, Citadelle, Lebanon).
+  3. **Usage Rules:** Clear bullet points.
+
+**FORMATTING RULES:**
+- Use ## for main headings (e.g., ## Son Job).
+- Use ### for sub-headings.
+- Use **bold** for ALL French words and important terms.
+- Use * for bullet points.
+- Ensure plenty of spacing between sections.
+- Return ONLY the formatted Markdown.`;
 
         return await callDeepSeek(prompt, systemPrompt);
     } catch (error: any) {
