@@ -66,13 +66,17 @@ const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: b
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+            throw new Error(`DEEPSEEK_API_ERROR: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
         return data.choices[0].message.content || '';
-    } catch (error) {
-        console.error('DeepSeek API call failed:', error);
+    } catch (error: any) {
+        console.error('DeepSeek call failed:', error);
+        // If it's a browser fetch error (e.g. CORS), identify it so we can fallback
+        if (error.name === 'TypeError' || error.message.includes('fetch')) {
+            throw new Error('DEEPSEEK_NETWORK_ERROR');
+        }
         throw error;
     }
 };
@@ -179,7 +183,8 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
         const response = await callDeepSeek(prompt, systemPrompt, true);
         return parseJSON<QuizQuestion[]>(response);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET' || error.message === 'DEEPSEEK_NETWORK_ERROR') {
+            console.log('DeepSeek unavailable, using Gemini fallback for Quiz');
             return await geminiService.getQuiz(topicTitle, language);
         }
         return [];
@@ -304,7 +309,7 @@ export const getWritingFeedback = async (promptText: string, userText: string, l
 
         return await callDeepSeek(prompt);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET' || error.message === 'DEEPSEEK_NETWORK_ERROR') {
             return await geminiService.getWritingFeedback(promptText, userText, language);
         }
         return "Impossible de générer le feedback pour le moment.";
@@ -536,7 +541,8 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
         }
         return examData;
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
+        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET' || error.message === 'DEEPSEEK_NETWORK_ERROR') {
+            console.log('DeepSeek unavailable, using Gemini fallback for Examen Blanc');
             return await geminiService.getExamenBlancGeneratorData(language);
         }
         console.error("Error generating Examen Blanc Generator data", error);
