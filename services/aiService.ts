@@ -494,81 +494,59 @@ export const getComprehensiveExamData = async (language: Language) => {
     }
 };
 
-export const getExamenBlancGeneratorData = async (language: Language) => {
+export const getExamenBlancGeneratorData = async (language: Language): Promise<any> => {
     try {
         const userContext = getUserContext();
-        const prompt = `
-    Créez un EXAMEN BLANC complet (type B1 FLE), basé sur le guide "Groupe de FLE Caramel : évaluations de janvier 2025".
-
+        const promptText = `
+    Generate a complete EXAMEN BLANC (B1 FLE type) for Ahmad.
     ${userContext}
     
-    **INSTRUCTION PRIORITAIRE :** Utilisez les informations du profil ci-dessus pour personnaliser TOUS les contenus de l'examen (dialogues, textes, sujets d'écriture, situations orales). Les exemples doivent refléter la vie réelle de l'étudiant.
+    **PERSONALIZATION RULES:**
+    - Use Ahmad's life in **Liège (Citadelle)** or memories of **Libanon** for all content.
+    - Style: "For Dummies" (Simple, helpful, slightly funny coach persona).
+    - Ahmad is the protagonist in dialogues and texts.
 
-    **Syllabus & Contraintes:**
-    1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
-        - Pour "Logement/Quartier", le contexte DOIT être la ville de **Liège** et plus précisément le quartier de la **Citadelle**.
-        - Pour "Enfance/Souvenirs", le contexte DOIT être le **Liban**.
-    2.  **Grammaire & Langue:**
-        - Temps du passé: Passé Composé, Imparfait, Plus-que-parfait.
-        - Futur: Simple, Proche, Conditionnel (souhaits, politesse).
-        - Structures: "Si j'avais... j'aurais...", "Si seulement...".
-    3.  **Sections Requises (6 au total):**
-        - I. Compréhension de l'Oral (Dialogue ~1 min)
-        - II. Compréhension de l'Écrit (Texte ~150 mots)
-        - III. Production Écrite (2 choix de sujets)
-        - IV. Interaction Orale (2 situations de jeu de rôle)
-        - V. Production Orale en Continu (2 thèmes de monologue)
-        - VI. Grammaire & Lexique (Exercices à trous, transformations)
+    **SYLLABUS (B1):**
+    1. **Themes:** Housing (Logement/Citadelle), Neighborhood (Liège), Childhood (Lebanon), Future plans.
+    2. **Grammar:** Passé Composé, Imparfait, Plus-que-parfait, Conditionnel, "Si seulement...".
 
-    **Format de Sortie JSON (AVEC CORRIGÉS):**
+    **REQUIRED JSON STRUCTURE:**
     {
       "listening": {
-        "text": "Texte du dialogue. Présentez le dialogue avec des sauts de ligne entre les intervenants (ex: Sophie: ...\nMarc: ...).",
-        "questions": [
-           { "question": "Question 1...", "answer": "Réponse correcte..." },
-           { "question": "Question 2...", "answer": "Réponse correcte..." }
-        ]
+        "text": "French dialogue between two people (~150 words). Format: Name: Text\\nName: Text",
+        "questions": [{ "question": "...", "answer": "..." }]
       },
       "reading": {
-        "text": "Texte à lire...",
-        "questions": [
-            { "question": "Question 1...", "answer": "Réponse correcte..." }
-        ],
-        "trueFalse": [
-            { "statement": "Affirmation 1", "answer": "Vrai ou Faux, car..." },
-            { "statement": "Affirmation 2", "answer": "Vrai ou Faux, car..." }
-        ]
+        "text": "A French blog post or email from Ahmad (~200 words).",
+        "questions": [{ "question": "...", "answer": "..." }],
+        "trueFalse": [{ "statement": "...", "answer": "Vrai/Faux because..." }]
       },
       "writing": {
-        "topicA": "Sujet A...",
-        "topicB": "Sujet B...",
-        "correctionModels": { "topicA": "Points clés à inclure...", "topicB": "Points clés à inclure..." }
+        "topicA": "A topic about moving to Liège.",
+        "topicB": "A topic about memories of Lebanon.",
+        "correctionModels": { "topicA": "Key points...", "topicB": "Key points..." }
       },
       "speakingInteraction": {
-         "situation1": { "title": "Titre Sit 1", "points": ["..."], "rolePlayKey": "Conseils pour l'interaction..." },
-         "situation2": { "title": "Titre Sit 2", "points": ["..."], "rolePlayKey": "Conseils pour l'interaction..." }
+         "situation1": { "title": "Roleplay at the Citadelle", "points": ["..."], "rolePlayKey": "Tips..." },
+         "situation2": { "title": "Roleplay in a Lebanese restaurant", "points": ["..."], "rolePlayKey": "Tips..." }
       },
       "speakingContinuous": {
-         "theme1": "Thème 1...",
-         "theme2": "Thème 2...",
-         "modelPoints": { "theme1": ["Idée 1", "Idée 2"], "theme2": ["Idée 1", "Idée 2"] }
+         "theme1": "Monologue about my journey from Lebanon to Belgium.",
+         "theme2": "Monologue about my favorite place in Liège.",
+         "modelPoints": { "theme1": ["Point 1", "Point 2"], "theme2": ["..."] }
       },
       "grammar": {
-         "exercise1": { "instruction": "...", "sentences": [ { "phrase": "...", "answer": "..." } ] },
-         "exercise2": { "instruction": "...", "sentences": [ { "phrase": "...", "answer": "..." } ] },
-         "exercise3": { "instruction": "...", "sentences": [ { "phrase": "...", "answer": "..." } ] },
-         "lexicon": { "instruction": "...", "theme": "...", "solution": ["Mot 1", "Mot 2"] }
+         "exercise1": { "instruction": "Fill in with Passé Composé/Imparfait", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "exercise2": { "instruction": "Fill in with Plus-que-parfait", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "exercise3": { "instruction": "Fill in with Conditionnel", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "lexicon": { "instruction": "Write 5 words about housing", "theme": "Housing", "solution": ["..."] }
       }
     }
-    
-    **CRITICAL:** Return ONLY the JSON object. Ensure sections "grammar" has exactly keys "exercise1", "exercise2", "exercise3", and "lexicon".
-    **RÈGLES DE VALIDATION:**
-    - Vérifiez que les réponses aux questions de grammaire sont 100% correctes.
-    - **CRUCIAL:** Pour les verbes au passé composé ou plus-que-parfait, utilisez scrupuleusement le bon auxiliaire (**être** pour partir, arriver, entrer, etc., et les verbes pronominaux).
-    - Pour les thèmes belges, restez cohérent.
+
+    **IMPORTANT:** Return ONLY the JSON object. All sections MUST exist.
     `;
 
-        const response = await callDeepSeek(prompt, "Expert French Teacher", true);
+        const response = await callDeepSeek(promptText, "Expert French Coach", true);
         const examData = parseJSON<any>(response);
 
         if (examData?.listening?.text) {

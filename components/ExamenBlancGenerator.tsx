@@ -247,7 +247,13 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
         setError(null);
         try {
             const data = await getExamenBlancGeneratorData(language);
-            if (!data) throw new Error("No data returned");
+            if (!data) throw new Error("No data returned from AI");
+
+            // Sanity check for critical structure
+            if (!data.listening || !data.reading || !data.grammar) {
+                console.warn("Received incomplete exam data:", data);
+            }
+
             setExamData(data);
         } catch (err: any) {
             console.error("Failed to generate exam", err);
@@ -273,60 +279,59 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
 
         const sections = [
             {
-                title: "I. COMPRÉHENSION DE L'ORAL (10 points)",
+                title: "I. COMPRÉHENSION DE L'ORAL (20 points)",
                 icon: <Headphones size={24} className="text-blue-600" />,
                 content: (
                     <div className="space-y-6">
-                        <p className="text-slate-600">Écoutez le dialogue et répondez aux questions. (Vous pouvez aussi lire la transcription ci-dessous.)</p>
-                        <div className="mb-4">
-                            <button
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-semibold disabled:opacity-50"
-                                onClick={async () => {
-                                    if (!examData.listening.audio) {
-                                        setAudioLoading(true);
-                                        try {
-                                            const audio = await getSpeech(examData.listening.text);
-                                            setExamData({ ...examData, listening: { ...examData.listening, audio } });
-                                            await playAudio(audio);
-                                        } catch (e) {
-                                            console.error('Audio generation failed:', e);
-                                            alert('Failed to generate audio. Please try again.');
-                                        }
-                                        setAudioLoading(false);
-                                    } else {
-                                        playAudio(examData.listening.audio);
-                                    }
-                                }}
-                                disabled={audioLoading}
-                            >
-                                {audioLoading ? <Loader2 className="animate-spin" size={20} /> : <PlayCircle size={20} />}
-                                {audioLoading ? 'Generating Audio...' : 'Listen to Dialogue'}
-                            </button>
+                        <div className="bg-blue-50 p-6 rounded-lg border border-blue-100 italic whitespace-pre-wrap leading-relaxed text-slate-800">
+                            {formatDialogue(examData.listening?.text || "No listening text available.")}
                         </div>
-                        <details className="bg-slate-100 rounded-xl overflow-hidden border border-slate-200">
-                            <summary className="px-4 py-2 text-sm font-semibold text-slate-600 cursor-pointer hover:bg-slate-200 transition-colors">
-                                Show Transcription
-                            </summary>
-                            <div className="p-4 text-sm text-slate-700 whitespace-pre-line leading-relaxed font-mono">
-                                {formatDialogue(examData.listening.text)}
+                        {examData.listening?.text && (
+                            <div className="flex gap-4 items-center mt-4">
+                                <button
+                                    onClick={async () => {
+                                        if (!examData.listening.audio) {
+                                            setAudioLoading(true);
+                                            try {
+                                                const audio = await getSpeech(examData.listening.text);
+                                                setExamData({ ...examData, listening: { ...examData.listening, audio } });
+                                                await playAudio(audio);
+                                            } catch (e) {
+                                                console.error('Audio generation failed:', e);
+                                            }
+                                            setAudioLoading(false);
+                                        } else {
+                                            playAudio(examData.listening.audio);
+                                        }
+                                    }}
+                                    disabled={audioLoading}
+                                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50"
+                                >
+                                    {audioLoading ? <Loader2 className="animate-spin" size={20} /> : <PlayCircle size={20} />}
+                                    {audioLoading ? 'Générant l\'audio...' : 'Écouter le Dialogue'}
+                                </button>
+                                <details className="text-xs text-slate-500 cursor-pointer">
+                                    <summary>Voir la transcription</summary>
+                                    <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-200 whitespace-pre-wrap">
+                                        {examData.listening.text}
+                                    </div>
+                                </details>
                             </div>
-                        </details>
-                        <div className="space-y-4 mt-6">
-                            <h4 className="font-bold">Questions :</h4>
-                            {examData.listening.questions.map((q: any, i: number) => (
+                        )}
+                        <div className="space-y-4 mt-8">
+                            <h4 className="font-bold text-slate-800 border-b pb-2">Questions de Compréhension :</h4>
+                            {(examData.listening?.questions || []).map((q: any, i: number) => (
                                 <div key={i} className="space-y-2">
-                                    <label className="block text-slate-700 font-medium">{i + 1}. {q.question}</label>
+                                    <p className="text-slate-700 font-medium">{i + 1}. {q.question}</p>
                                     <input
                                         type="text"
-                                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
                                         placeholder="Votre réponse..."
                                         value={userAnswers[`listening_${i}`] || ''}
                                         onChange={(e) => handleInputChange(`listening_${i}`, e.target.value)}
                                     />
                                     {showAnswers && (
-                                        <div className="bg-green-50 text-green-800 p-3 rounded-lg text-sm border border-green-200 mt-2">
-                                            <strong>Réponse suggérée:</strong> {q.answer}
-                                        </div>
+                                        <div className="text-green-600 text-sm font-medium animate-in fade-in">Correct Answer: {q.answer}</div>
                                     )}
                                 </div>
                             ))}
@@ -335,50 +340,50 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                 )
             },
             {
-                title: "II. COMPRÉHENSION DE L'ÉCRIT (10 points)",
-                icon: <Eye size={24} className="text-amber-600" />,
+                title: "II. COMPRÉHENSION DE L'ÉCRIT (20 points)",
+                icon: <Eye size={24} className="text-emerald-600" />,
                 content: (
                     <div className="space-y-6">
-                        <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl leading-relaxed whitespace-pre-line text-slate-800">
-                            {formatDialogue(examData.reading.text)}
+                        <div className="p-6 bg-emerald-50 border border-emerald-100 rounded-xl leading-relaxed whitespace-pre-wrap text-slate-800">
+                            {formatDialogue(examData.reading?.text || "No reading text available.")}
                         </div>
-                        <div className="space-y-4 mt-6">
-                            <h4 className="font-bold">Questions :</h4>
-                            {examData.reading.questions.map((q: any, i: number) => (
+                        <div className="space-y-4 mt-8">
+                            <h4 className="font-bold text-slate-800 border-b pb-2">Questions :</h4>
+                            {(examData.reading?.questions || []).map((q: any, i: number) => (
                                 <div key={i} className="space-y-2">
-                                    <label className="block text-slate-700 font-medium">{i + 1}. {q.question}</label>
+                                    <p className="text-slate-700 font-medium">{i + 1}. {q.question}</p>
                                     <input
                                         type="text"
-                                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500"
                                         placeholder="Votre réponse..."
                                         value={userAnswers[`reading_${i}`] || ''}
                                         onChange={(e) => handleInputChange(`reading_${i}`, e.target.value)}
                                     />
                                     {showAnswers && (
-                                        <div className="bg-green-50 text-green-800 p-3 rounded-lg text-sm border border-green-200 mt-2">
-                                            <strong>Réponse suggérée:</strong> {q.answer}
-                                        </div>
+                                        <div className="text-green-600 text-sm font-medium animate-in fade-in">Correct Answer: {q.answer}</div>
                                     )}
                                 </div>
                             ))}
-                            {examData.reading.trueFalse.map((q: any, i: number) => (
-                                <div key={i} className="space-y-2">
-                                    <p className="font-medium text-slate-700">{q.statement}</p>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center gap-2">
-                                            <input type="radio" name={`tf_${i}`} value="Vrai" onChange={(e) => handleInputChange(`reading_tf_${i}`, e.target.value)} checked={userAnswers[`reading_tf_${i}`] === 'Vrai'} /> Vrai
-                                        </label>
-                                        <label className="flex items-center gap-2">
-                                            <input type="radio" name={`tf_${i}`} value="Faux" onChange={(e) => handleInputChange(`reading_tf_${i}`, e.target.value)} checked={userAnswers[`reading_tf_${i}`] === 'Faux'} /> Faux
-                                        </label>
-                                    </div>
-                                    {showAnswers && (
-                                        <div className="bg-green-50 text-green-800 p-3 rounded-lg text-sm border border-green-200 mt-2">
-                                            <strong>Correction:</strong> {q.answer}
+                            {(examData.reading?.trueFalse || []).length > 0 && (
+                                <div className="mt-6">
+                                    <h4 className="font-bold text-slate-800 mb-4">Vrai ou Faux ? Justifiez :</h4>
+                                    {examData.reading.trueFalse.map((tf: any, i: number) => (
+                                        <div key={i} className="space-y-2 mb-4">
+                                            <p className="text-slate-700 font-medium">{i + 1}. {tf.statement}</p>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500"
+                                                placeholder="Vrai/Faux + justification..."
+                                                value={userAnswers[`reading_tf_${i}`] || ''}
+                                                onChange={(e) => handleInputChange(`reading_tf_${i}`, e.target.value)}
+                                            />
+                                            {showAnswers && (
+                                                <div className="text-green-600 text-sm font-medium animate-in fade-in">Correct Answer: {tf.answer}</div>
+                                            )}
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 )
@@ -388,12 +393,12 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                 icon: <PenSquare size={24} className="text-purple-600" />,
                 content: (
                     <div className="space-y-6">
-                        <p className="text-slate-600">Choisissez UN des deux sujets suivants :</p>
+                        <p className="text-slate-600">Choisissez UN des deux sujets suivants et rédigez un texte d'environ 150 mots.</p>
                         <div className="grid md:grid-cols-2 gap-6">
-                            <div className="p-6 border border-slate-200 rounded-xl bg-white">
+                            <div className="p-6 border border-slate-200 rounded-xl bg-white shadow-sm">
                                 <h4 className="font-bold text-lg mb-2 text-purple-700">Sujet 1</h4>
-                                <p className="text-slate-700 mb-2">{examData.writing.topicA}</p>
-                                {showAnswers && (
+                                <p className="text-slate-700 mb-2">{examData.writing?.topicA || "No topic available."}</p>
+                                {showAnswers && examData.writing?.correctionModels?.topicA && (
                                     <>
                                         <div className="text-xs text-purple-800 bg-purple-50 p-2 rounded mb-2">
                                             <strong>Points clés:</strong> {examData.writing.correctionModels.topicA}
@@ -402,10 +407,10 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                                     </>
                                 )}
                             </div>
-                            <div className="p-6 border border-slate-200 rounded-xl bg-white">
+                            <div className="p-6 border border-slate-200 rounded-xl bg-white shadow-sm">
                                 <h4 className="font-bold text-lg mb-2 text-purple-700">Sujet 2</h4>
-                                <p className="text-slate-700 mb-2">{examData.writing.topicB}</p>
-                                {showAnswers && (
+                                <p className="text-slate-700 mb-2">{examData.writing?.topicB || "No topic available."}</p>
+                                {showAnswers && examData.writing?.correctionModels?.topicB && (
                                     <>
                                         <div className="text-xs text-purple-800 bg-purple-50 p-2 rounded mb-2">
                                             <strong>Points clés:</strong> {examData.writing.correctionModels.topicB}
@@ -425,7 +430,7 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                             ></textarea>
                             <WritingCorrection
                                 language={language}
-                                prompt={examData.writing.topicA + " OR " + examData.writing.topicB}
+                                prompt={(examData.writing?.topicA || "") + " OR " + (examData.writing?.topicB || "")}
                                 userText={userAnswers[`writing`] || ''}
                                 t={t}
                             />
@@ -439,31 +444,31 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                 content: (
                     <div className="space-y-6">
                         <p className="text-slate-600">Préparez des réponses aux situations suivantes :</p>
-                        <div className="bg-rose-50 p-6 rounded-lg border border-rose-100">
-                            <h4 className="font-bold text-rose-800 mb-2">{examData.speakingInteraction.situation1.title}</h4>
+                        <div className="bg-rose-50 p-6 rounded-lg border border-rose-100 shadow-sm">
+                            <h4 className="font-bold text-rose-800 mb-2">{examData.speakingInteraction?.situation1?.title || "Simulation 1"}</h4>
                             <ul className="list-disc pl-5 text-rose-700 space-y-1 mb-4">
-                                {examData.speakingInteraction.situation1.points.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                                {(examData.speakingInteraction?.situation1?.points || []).map((p: string, i: number) => <li key={i}>{p}</li>)}
                             </ul>
                             {showAnswers && (
                                 <>
                                     <div className="bg-white/50 p-3 rounded-lg text-rose-900 text-sm border border-rose-200">
-                                        <strong>Conseil:</strong> {examData.speakingInteraction.situation1.rolePlayKey}
+                                        <strong>Conseil:</strong> {examData.speakingInteraction?.situation1?.rolePlayKey}
                                     </div>
-                                    <ModelAnswerGenerator language={language} type="speaking" prompt={examData.speakingInteraction.situation1.title} context={examData.speakingInteraction.situation1.points.join(', ')} />
+                                    <ModelAnswerGenerator language={language} type="speaking" prompt={examData.speakingInteraction?.situation1?.title} context={examData.speakingInteraction?.situation1?.points?.join(', ')} />
                                 </>
                             )}
                         </div>
-                        <div className="bg-rose-50 p-6 rounded-lg border border-rose-100 mt-4">
-                            <h4 className="font-bold text-rose-800 mb-2">{examData.speakingInteraction.situation2.title}</h4>
+                        <div className="bg-rose-50 p-6 rounded-lg border border-rose-100 mt-4 shadow-sm">
+                            <h4 className="font-bold text-rose-800 mb-2">{examData.speakingInteraction?.situation2?.title || "Simulation 2"}</h4>
                             <ul className="list-disc pl-5 text-rose-700 space-y-1 mb-4">
-                                {examData.speakingInteraction.situation2.points.map((p: string, i: number) => <li key={i}>{p}</li>)}
+                                {(examData.speakingInteraction?.situation2?.points || []).map((p: string, i: number) => <li key={i}>{p}</li>)}
                             </ul>
                             {showAnswers && (
                                 <>
                                     <div className="bg-white/50 p-3 rounded-lg text-rose-900 text-sm border border-rose-200">
-                                        <strong>Conseil:</strong> {examData.speakingInteraction.situation2.rolePlayKey}
+                                        <strong>Conseil:</strong> {examData.speakingInteraction?.situation2?.rolePlayKey}
                                     </div>
-                                    <ModelAnswerGenerator language={language} type="speaking" prompt={examData.speakingInteraction.situation2.title} context={examData.speakingInteraction.situation2.points.join(', ')} />
+                                    <ModelAnswerGenerator language={language} type="speaking" prompt={examData.speakingInteraction?.situation2?.title} context={examData.speakingInteraction?.situation2?.points?.join(', ')} />
                                 </>
                             )}
                         </div>
@@ -477,27 +482,27 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                     <div className="space-y-6">
                         <p className="text-slate-600">Préparez une présentation courte (1-2 minutes) sur UN des thèmes suivants :</p>
                         <div className="grid md:grid-cols-2 gap-6">
-                            <div className="p-6 border border-slate-200 rounded-xl bg-white">
+                            <div className="p-6 border border-slate-200 rounded-xl bg-white shadow-sm">
                                 <h4 className="font-bold text-lg mb-2 text-indigo-700">Thème 1</h4>
-                                <p className="text-slate-700 mb-2">{examData.speakingContinuous.theme1}</p>
+                                <p className="text-slate-700 mb-2">{examData.speakingContinuous?.theme1 || "No theme available."}</p>
                                 {showAnswers && (
                                     <>
                                         <div className="text-xs text-indigo-800 bg-indigo-50 p-2 rounded mb-2">
-                                            <strong>Points clés:</strong> {examData.speakingContinuous.modelPoints.theme1.join(', ')}
+                                            <strong>Points clés:</strong> {examData.speakingContinuous?.modelPoints?.theme1?.join(', ')}
                                         </div>
-                                        <ModelAnswerGenerator language={language} type="speaking" prompt={examData.speakingContinuous.theme1} />
+                                        <ModelAnswerGenerator language={language} type="speaking" prompt={examData.speakingContinuous?.theme1} />
                                     </>
                                 )}
                             </div>
-                            <div className="p-6 border border-slate-200 rounded-xl bg-white">
+                            <div className="p-6 border border-slate-200 rounded-xl bg-white shadow-sm">
                                 <h4 className="font-bold text-lg mb-2 text-indigo-700">Thème 2</h4>
-                                <p className="text-slate-700 mb-2">{examData.speakingContinuous.theme2}</p>
+                                <p className="text-slate-700 mb-2">{examData.speakingContinuous?.theme2 || "No theme available."}</p>
                                 {showAnswers && (
                                     <>
                                         <div className="text-xs text-indigo-800 bg-indigo-50 p-2 rounded mb-2">
-                                            <strong>Points clés:</strong> {examData.speakingContinuous.modelPoints.theme2.join(', ')}
+                                            <strong>Points clés:</strong> {examData.speakingContinuous?.modelPoints?.theme2?.join(', ')}
                                         </div>
-                                        <ModelAnswerGenerator language={language} type="speaking" prompt={examData.speakingContinuous.theme2} />
+                                        <ModelAnswerGenerator language={language} type="speaking" prompt={examData.speakingContinuous?.theme2} />
                                     </>
                                 )}
                             </div>
@@ -512,11 +517,12 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                     <div className="space-y-8">
                         {[1, 2, 3].map((exerciseNum) => {
                             const exKey = `exercise${exerciseNum}`;
-                            const ex = examData.grammar[exKey];
+                            const ex = examData.grammar?.[exKey];
+                            if (!ex) return null;
                             return (
                                 <div key={exerciseNum}>
-                                    <h4 className="font-bold text-lg mb-4">{ex.instruction}</h4>
-                                    {ex.sentences.map((s: any, i: number) => (
+                                    <h4 className="font-bold text-lg mb-4 text-slate-800 border-b pb-1">{ex.instruction}</h4>
+                                    {(ex.sentences || []).map((s: any, i: number) => (
                                         <div key={i} className="mb-4">
                                             <p className="text-slate-700 mb-1">{i + 1}. {s.phrase}</p>
                                             <input
@@ -527,29 +533,31 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                                                 onChange={(e) => handleInputChange(`grammar_ex${exerciseNum}_${i}`, e.target.value)}
                                             />
                                             {showAnswers && (
-                                                <div className="text-green-600 text-sm mt-1 font-medium">Correction: {s.answer}</div>
+                                                <div className="text-green-600 text-sm mt-1 font-medium bg-green-50 px-2 py-1 rounded inline-block">Correction: {s.answer}</div>
                                             )}
                                         </div>
                                     ))}
                                 </div>
                             )
                         })}
-                        <div>
-                            <h4 className="font-bold text-lg mb-2">Lexique</h4>
-                            <p className="text-slate-700 mb-2">{examData.grammar.lexicon.instruction} ({examData.grammar.lexicon.theme})</p>
-                            <textarea
-                                className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-2"
-                                placeholder="Vos mots..."
-                                rows={2}
-                                value={userAnswers[`lexicon`] || ''}
-                                onChange={(e) => handleInputChange(`lexicon`, e.target.value)}
-                            ></textarea>
-                            {showAnswers && (
-                                <div className="bg-green-50 p-3 rounded-lg text-green-800 text-sm border border-green-200">
-                                    <strong>Solution:</strong> {examData.grammar.lexicon.solution.join(', ')}
-                                </div>
-                            )}
-                        </div>
+                        {examData.grammar?.lexicon && (
+                            <div className="mt-8 pt-6 border-t border-slate-100">
+                                <h4 className="font-bold text-lg mb-2 text-teal-800">Lexique : {examData.grammar.lexicon.theme}</h4>
+                                <p className="text-slate-700 mb-3">{examData.grammar.lexicon.instruction}</p>
+                                <textarea
+                                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 mb-2"
+                                    placeholder="Vos mots..."
+                                    rows={2}
+                                    value={userAnswers[`lexicon`] || ''}
+                                    onChange={(e) => handleInputChange(`lexicon`, e.target.value)}
+                                ></textarea>
+                                {showAnswers && (
+                                    <div className="bg-green-50 p-3 rounded-lg text-green-800 text-sm border border-green-200">
+                                        <strong>Solution:</strong> {(examData.grammar.lexicon.solution || []).join(', ')}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )
             }

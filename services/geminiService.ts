@@ -6,7 +6,7 @@ import { getUserContext } from "../userProfile";
 // Fallback to Gemini keys only
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.VITE_API_KEY;
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY || "" });
-const modelName = 'gemini-1.5-flash'; // High-availability stable model
+const modelName = 'gemini-1.5-flash-latest'; // More robust model identifier
 
 const parseGeminiJson = <T>(text: string | undefined): T => {
     if (!text) {
@@ -279,27 +279,59 @@ export const getComprehensiveExamData = async (language: Language): Promise<any>
 
 export const getExamenBlancGeneratorData = async (language: Language): Promise<any> => {
     const context = getUserContext();
+    const promptText = `
+    Generate a complete EXAMEN BLANC (B1 FLE type) for Ahmad.
+    ${context}
+    
+    **PERSONALIZATION RULES:**
+    - Use Ahmad's life in **Liège (Citadelle)** or memories of **Libanon** for all content.
+    - Style: "For Dummies" (Simple, helpful, slightly funny coach persona).
+    - Ahmad is the protagonist in dialogues and texts.
+
+    **SYLLABUS (B1):**
+    1. **Themes:** Housing (Logement/Citadelle), Neighborhood (Liège), Childhood (Lebanon), Future plans.
+    2. **Grammar:** Passé Composé, Imparfait, Plus-que-parfait, Conditionnel, "Si seulement...".
+
+    **REQUIRED JSON STRUCTURE:**
+    {
+      "listening": {
+        "text": "French dialogue between two people (~150 words). Format: Name: Text\\nName: Text",
+        "questions": [{ "question": "...", "answer": "..." }]
+      },
+      "reading": {
+        "text": "A French blog post or email from Ahmad (~200 words).",
+        "questions": [{ "question": "...", "answer": "..." }],
+        "trueFalse": [{ "statement": "...", "answer": "Vrai/Faux because..." }]
+      },
+      "writing": {
+        "topicA": "A topic about moving to Liège.",
+        "topicB": "A topic about memories of Lebanon.",
+        "correctionModels": { "topicA": "Key points...", "topicB": "Key points..." }
+      },
+      "speakingInteraction": {
+         "situation1": { "title": "Roleplay at the Citadelle", "points": ["..."], "rolePlayKey": "Tips..." },
+         "situation2": { "title": "Roleplay in a Lebanese restaurant", "points": ["..."], "rolePlayKey": "Tips..." }
+      },
+      "speakingContinuous": {
+         "theme1": "Monologue about my journey from Lebanon to Belgium.",
+         "theme2": "Monologue about my favorite place in Liège.",
+         "modelPoints": { "theme1": ["Point 1", "Point 2"], "theme2": ["..."] }
+      },
+      "grammar": {
+         "exercise1": { "instruction": "Fill in with Passé Composé/Imparfait", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "exercise2": { "instruction": "Fill in with Plus-que-parfait", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "exercise3": { "instruction": "Fill in with Conditionnel", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "lexicon": { "instruction": "Write 5 words about housing", "theme": "Housing", "solution": ["..."] }
+      }
+    }
+
+    **IMPORTANT:** Return ONLY the JSON object. All sections MUST exist.
+    `;
+
     const response: any = await ai.models.generateContent({
         model: modelName,
         contents: [{
-            role: "user", parts: [{
-                text: `Generate a full Examen Blanc B1 for Ahmad in ${language}. 
-        ${context}
-        Use his life in Liège (Citadelle) and Lebanon as context. 
-        Return JSON object with exactly this schema:
-        {
-          "listening": { "text": "...", "questions": [{"question": "...", "answer": "..."}] },
-          "reading": { "text": "...", "questions": [...], "trueFalse": [{"statement": "...", "answer": "..."}] },
-          "writing": { "topicA": "...", "topicB": "...", "correctionModels": {"topicA": "...", "topicB": "..."} },
-          "speakingInteraction": { "situation1": {"title": "...", "points": ["..."], "rolePlayKey": "..."}, "situation2": {...} },
-          "speakingContinuous": { "theme1": "...", "theme2": "...", "modelPoints": {"theme1": [...], "theme2": [...]} },
-          "grammar": { 
-             "exercise1": {"instruction": "...", "sentences": [{"phrase": "...", "answer": "..."}]},
-             "exercise2": {...}, "exercise3": {...}, 
-             "lexicon": {"instruction": "...", "theme": "...", "solution": [...]}
-          }
-        }`
-            }]
+            role: "user", parts: [{ text: promptText }]
         }],
         config: { responseMimeType: "application/json" }
     });
