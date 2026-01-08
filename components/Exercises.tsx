@@ -27,10 +27,19 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setQuestions([]);
-    
-    const quizData = await getQuiz(topic.title, language);
-    setQuestions(quizData);
-    setLoading(false);
+
+    try {
+      const quizData = await getQuiz(topic.title, language);
+      if (!quizData || quizData.length === 0) {
+        throw new Error("Empty quiz data");
+      }
+      setQuestions(quizData);
+    } catch (err) {
+      console.error("Failed to load quiz:", err);
+      setQuestions([]); // This will trigger the empty/error state
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAnswer = (index: number) => {
@@ -59,8 +68,8 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="text-center space-y-2 mb-8">
-            <h2 className="text-3xl font-bold text-slate-800 font-heading">{t('exercises.title')}</h2>
-            <p className="text-slate-500">{t('exercises.description', { language })}</p>
+          <h2 className="text-3xl font-bold text-slate-800 font-heading">{t('exercises.title')}</h2>
+          <p className="text-slate-500">{t('exercises.description', { language })}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {GRAMMAR_TOPICS.map((topic) => (
@@ -89,10 +98,10 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
 
   if (questions.length === 0) {
     return (
-        <div className="text-center space-y-4 pt-10">
-            <p className="text-slate-500">{t('exercises.error')}</p>
-            <button onClick={reset} className="text-blue-600 font-bold hover:underline">{t('exercises.goBack')}</button>
-        </div>
+      <div className="text-center space-y-4 pt-10">
+        <p className="text-slate-500">{t('exercises.error')}</p>
+        <button onClick={reset} className="text-blue-600 font-bold hover:underline">{t('exercises.goBack')}</button>
+      </div>
     )
   }
 
@@ -100,7 +109,7 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
     return (
       <div className="h-full flex flex-col items-center justify-center space-y-6 animate-in zoom-in-95 duration-500">
         <div className="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center text-amber-500 mb-4">
-            <Trophy size={48} />
+          <Trophy size={48} />
         </div>
         <h2 className="text-3xl font-bold text-slate-900 font-heading">{t('exercises.completed')}</h2>
         <p className="text-xl text-slate-600">
@@ -139,7 +148,7 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
               } else if (isSelected) {
                 buttonClass = 'bg-red-50 border-red-500 text-red-800';
               } else {
-                 buttonClass = 'bg-slate-50 border-slate-200 text-slate-500';
+                buttonClass = 'bg-slate-50 border-slate-200 text-slate-500';
               }
             }
 

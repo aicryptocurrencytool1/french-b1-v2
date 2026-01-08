@@ -25,9 +25,18 @@ const Flashcards: React.FC<FlashcardsProps> = ({ language }) => {
         setCards([]);
         setCurrentIndex(0);
         setIsFlipped(false);
-        const data = await getFlashcards(cat, language);
-        setCards(data);
-        setLoading(false);
+        try {
+            const data = await getFlashcards(cat, language);
+            if (!data || data.length === 0) {
+                throw new Error("Empty flashcard data");
+            }
+            setCards(data);
+        } catch (err) {
+            console.error("Failed to load flashcards:", err);
+            setCards([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const nextCard = () => {

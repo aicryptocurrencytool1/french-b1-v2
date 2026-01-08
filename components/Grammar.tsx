@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GRAMMAR_TOPICS } from '../constants';
 import { getGrammarExplanation } from '../services/aiService';
-import { ChevronRight, Loader2, BookOpen, ArrowLeft } from 'lucide-react';
+import { ChevronRight, Loader2, BookOpen, ArrowLeft, Sparkles } from 'lucide-react';
 import { Topic, Language } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { tensesComparisonExplanation } from './specialGrammarTopics';
@@ -127,9 +127,18 @@ const Grammar: React.FC<GrammarProps> = ({ language }) => {
     <div className="h-full flex flex-col">
       {!selectedTopic ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="text-center space-y-2 mb-8">
-            <h2 className="text-3xl font-bold text-slate-800 font-heading">{t('grammar.title')}</h2>
-            <p className="text-slate-500 max-w-2xl mx-auto">{t('grammar.description', { language })}</p>
+          <div className="text-center space-y-4 mb-10 p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden">
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-blue-600/10 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-indigo-600/10 rounded-full blur-2xl"></div>
+
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-400 text-black font-black text-xs uppercase tracking-widest rounded-full shadow-sm mb-2 transform -rotate-1 border-2 border-black">
+              <Sparkles size={14} /> Certified for Dummies
+            </div>
+
+            <h2 className="text-4xl font-black text-slate-900 font-heading tracking-tight">{t('grammar.title')}</h2>
+            <p className="text-slate-600 max-w-xl mx-auto text-lg leading-relaxed">
+              No academic boring stuff here! Just simple, fun explanations tailored for <span className="font-bold text-blue-600">Ahmad</span>. 🚀
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {GRAMMAR_TOPICS.map((topic) => (
@@ -161,9 +170,14 @@ const Grammar: React.FC<GrammarProps> = ({ language }) => {
           </button>
 
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200 flex-1 flex flex-col overflow-hidden">
-            <div className="p-6 md:p-8 border-b border-slate-100 bg-slate-50/50">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 font-heading">{selectedTopic.title}</h2>
-              <p className="text-slate-500 mt-2">{selectedTopic.description}</p>
+            <div className="p-6 md:p-8 border-b border-slate-100 bg-slate-50/50 flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 font-heading">{selectedTopic.title}</h2>
+                <p className="text-slate-500 mt-2">{selectedTopic.description}</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-yellow-100 text-yellow-700 text-[10px] font-bold uppercase tracking-widest rounded-full border border-yellow-200 shadow-sm animate-pulse">
+                <Sparkles size={12} /> Coach Mode
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 md:p-8">

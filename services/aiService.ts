@@ -101,15 +101,28 @@ const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: b
 // Parse JSON from response
 const parseJSON = <T>(text: string): T => {
     let cleanedText = text.trim();
+
+    // 1. Try to extract from markdown block
     const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
     const match = cleanedText.match(jsonBlockRegex);
-
     if (match && match[1]) {
         cleanedText = match[1];
+    } else {
+        // 2. Fallback: Extract between first { and last }
+        const firstBrace = cleanedText.indexOf('{');
+        const lastBrace = cleanedText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+        }
     }
 
-    cleanedText = cleanedText.trim();
-    return JSON.parse(cleanedText) as T;
+    try {
+        cleanedText = cleanedText.trim();
+        return JSON.parse(cleanedText) as T;
+    } catch (e) {
+        console.error("JSON Parse Error. Cleaned text:", cleanedText);
+        throw e;
+    }
 };
 
 // Export all functions - text generation uses DeepSeek, audio uses Gemini
@@ -126,20 +139,19 @@ export const getGrammarExplanation = async (topicTitle: string, language: Langua
 Provide the explanation in ${language} language.
 ${userContext}
 
-**PEDAGOGICAL STYLE:**
-- Use the "For Dummies" approach: simple, clear, and relatable.
-- Use fun metaphors (like "Action Movie Star" for Passé Composé or "Scenery Painter" for Imparfait) if applicable to the topic.
-- Structure each section as: 
-  1. **Son Job (Its Job):** A simple explanation of why we use it.
-  2. **Dans l'histoire (In the Story):** A clear example using Ahmad's context (Liège, Citadelle, Lebanon).
-  3. **Usage Rules:** Clear bullet points.
+**PEDAGOGICAL STYLE (ULTRA-SIMPLE):**
+- Persona: A friendly, slightly funny French coach.
+- Tone: Extremely simple language, no academic jargon.
+- Metaphors: Essential! (e.g., "The Subjunctive is for when you're feeling 'weird', not for facts").
+- Sections:
+  1. **Son Job (Its Job):** 1-2 simple sentences on why this exists.
+  2. **The Metaphor:** A funny or relatable way to remember it.
+  3. **Dans la vraie vie (In real life):** 2 examples using Ahmad's life in **Liège** or memories of **Lebanon**.
+  4. **The "Secret Trick":** A simple rule of thumb for dummies.
 
 **FORMATTING RULES:**
-- Use ## for main headings (e.g., ## Son Job).
-- Use ### for sub-headings.
-- Use **bold** for ALL French words and important terms.
-- Use * for bullet points.
-- Ensure plenty of spacing between sections.
+- Use ## for main headings.
+- Use **bold** for ALL French words.
 - Return ONLY the formatted Markdown.`;
 
         return await callDeepSeek(prompt, systemPrompt);
@@ -189,33 +201,31 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
     try {
         const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
         const userContext = getUserContext();
-        const prompt = `Generate a JSON array of exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}" for a student named Ahmad.
+        const prompt = `Generate exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}" for a student named Ahmad.
         ${userContext}
         
         **CONTENT STRATEGY:**
-        - Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** as the context for the question sentences.
-        - Ensure questions are practical and relatable (e.g., describing his apartment, going to the bakery in Liège, his childhood in Lebanon).
+        - Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** for the context.
         
         **CRITICAL RULES:**
-        1. **Auxiliary Verbs:** In compound tenses (Passé Composé, Plus-que-parfait, etc.), ensure the correct auxiliary is used:
-           - Use **être** for the 17 verbs of movement/change of state (DR & MRS VANDERTRAMP).
-           - Use **être** for all reflexive/pronominal verbs.
-           - Use **avoir** for other verbs.
-        2. **Agreement:** Past participles must agree with the subject when using 'être'.
-        3. **Logic:** The correct answer MUST be grammatically perfect.
+        1. **Auxiliary Verbs:** Ensure correct auxiliary (être/avoir) for compound tenses.
+        2. **Logic:** The correct answer MUST be grammatically perfect.
         
-        The questions and options must be in French.
-        The explanation for the correct answer must be in ${language} and follow a simple "For Dummies" style.
-        Return ONLY a valid JSON array with this structure:
-        [{
-          "question": "question text in French",
-          "options": ["option1", "option2", "option3", "option4"],
-          "correctAnswerIndex": 0,
-          "explanation": "Simple pedagogical explanation in ${language}"
-        }]`;
+        Return ONLY a valid JSON object with the structure:
+        {
+          "questions": [
+            {
+              "question": "French text",
+              "options": ["A", "B", "C", "D"],
+              "correctAnswerIndex": 0,
+              "explanation": "Simple pedagogical explanation in ${language}"
+            }
+          ]
+        }`;
 
         const response = await callDeepSeek(prompt, systemPrompt, true);
-        return parseJSON<QuizQuestion[]>(response);
+        const parsed = parseJSON<{ questions: QuizQuestion[] }>(response);
+        return parsed.questions || [];
     } catch (error: any) {
         console.warn("DeepSeek quiz generation failed, falling back to Gemini:", error);
         return await geminiService.getQuiz(topicTitle, language);
@@ -225,22 +235,29 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
 export const getFlashcards = async (category: string, language: Language): Promise<Flashcard[]> => {
     try {
         const userContext = getUserContext();
-        let promptText = `Generate 10 French B1 flashcards for the category/topic: "${category}" for a student named Ahmad. 
+        let promptText = `Generate 10 French B1 flashcards for the topic: "${category}" for Ahmad. 
 ${userContext}
-**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** for the examples.
+**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon**.
 The back of the card must be the translation in ${language}.
-Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back": "translation", "example": "Personalized example sentence"}]`;
+Return ONLY a valid JSON object with structure: 
+{
+  "cards": [{"front": "French phrase", "back": "translation", "example": "Personalized example sentence"}]
+}`;
 
         if (category === 'Le Plus-que-parfait' || category === 'Exprimer le Regret (Si seulement...)') {
-            promptText = `Generate 10 French B1 flashcards for the topic: "${category}" for a student named Ahmad. 
+            promptText = `Generate 10 French B1 flashcards for "${category}" for Ahmad. 
 ${userContext}
-**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** for the examples. Focus on using the structure "Si seulement..." to express regret (e.g., front: "Si seulement j'avais su.", back: "If only I had known.").
+**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon**. Focus on "Si seulement...".
 The back of the card must be the translation in ${language}.
-Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back": "translation", "example": "Personalized example sentence"}]`;
+Return ONLY a valid JSON object with structure: 
+{
+  "cards": [{"front": "French phrase", "back": "translation", "example": "Personalized example sentence"}]
+}`;
         }
 
         const response = await callDeepSeek(promptText, undefined, true);
-        return parseJSON<Flashcard[]>(response);
+        const parsed = parseJSON<{ cards: Flashcard[] }>(response);
+        return parsed.cards || [];
     } catch (error: any) {
         console.warn("DeepSeek flashcard generation failed, falling back to Gemini:", error);
         return await geminiService.getFlashcards(category, language);
@@ -250,28 +267,37 @@ Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back
 export const getDailyPhrases = async (topic: string, tense: string, language: Language): Promise<Phrase[]> => {
     try {
         const userContext = getUserContext();
-        let promptText = `Generate 8 useful French sentences for the topic: "${topic}", primarily using the "${tense}" tense for a student named Ahmad.
+        let promptText = `Generate 8 useful French sentences for the topic: "${topic}", using "${tense}" for Ahmad.
 ${userContext}
-**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** for the sentences.
-Ensure they use common B1 vocabulary. Provide a clear translation and a simple context in ${language}.
-Return a valid JSON array with structure: [{"french": "sentence", "translation": "translation", "context": "context"}]`;
+**CONTENT STRATEGY:** Use Ahmad's life (Liège/Lebanon).
+Return a valid JSON object with structure: 
+{
+  "phrases": [{"french": "sentence", "translation": "translation", "context": "context"}]
+}`;
 
         if (topic === 'Si Conditionnel (If Conditional)') {
-            promptText = `Generate 8 useful French conditional ("if...then...") sentences for a student named Ahmad.
+            promptText = `Generate 8 French conditional sentences for Ahmad.
 ${userContext}
-**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon**.
-The "si" clause should use the "${tense}" tense. Provide a clear translation and a simple context in ${language}.
-Return a valid JSON array.`;
+**CONTENT STRATEGY:** Use Ahmad's life (Liège/Lebanon).
+The "si" clause should use "${tense}".
+Return a valid JSON object with structure: 
+{
+  "phrases": [{"french": "sentence", "translation": "translation", "context": "context"}]
+}`;
         } else if (topic === 'Si Seulement (If Only)') {
-            promptText = `Generate 8 useful French sentences expressing a wish or regret using "Si seulement..." for a student named Ahmad.
+            promptText = `Generate 8 French "Si seulement..." sentences for Ahmad.
 ${userContext}
-**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon**.
-The verb following "Si seulement" should be in the "${tense}" tense. Provide a clear translation and a simple context in ${language}.
-Return a valid JSON array.`;
+**CONTENT STRATEGY:** Use Ahmad's life (Liège/Lebanon).
+The verb following "Si seulement" should be in "${tense}".
+Return a valid JSON object with structure: 
+{
+  "phrases": [{"french": "sentence", "translation": "translation", "context": "context"}]
+}`;
         }
 
         const response = await callDeepSeek(promptText, undefined, true);
-        return parseJSON<Phrase[]>(response);
+        const parsed = parseJSON<{ phrases: Phrase[] }>(response);
+        return parsed.phrases || [];
     } catch (error: any) {
         console.warn("DeepSeek phrase generation failed, falling back to Gemini:", error);
         return await geminiService.getDailyPhrases(topic, tense, language);
@@ -523,11 +549,14 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
          "modelPoints": { "theme1": ["Idée 1", "Idée 2"], "theme2": ["Idée 1", "Idée 2"] }
       },
       "grammar": {
-         "exercise1": { "instruction": "...", "sentences": [ { "phrase": "Phrase à trou...", "answer": "Réponse complète" } ] },
-         "exercise2": { "instruction": "...", "sentences": [ { "phrase": "Phrase à compléter...", "answer": "Réponse complète" } ] },
-         "exercise3": { "instruction": "...", "sentences": [ { "phrase": "Phrase à transformer...", "answer": "Réponse transformée" } ] },
-         "lexicon": { "instruction": "...", "theme": "...", "solution": ["Mot 1", "Mot 2", "Mot 3", "Mot 4", "Mot 5"] }
+         "exercise1": { "instruction": "...", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "exercise2": { "instruction": "...", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "exercise3": { "instruction": "...", "sentences": [ { "phrase": "...", "answer": "..." } ] },
+         "lexicon": { "instruction": "...", "theme": "...", "solution": ["Mot 1", "Mot 2"] }
       }
+    }
+    
+    **CRITICAL:** Return ONLY the JSON object. Ensure sections "grammar" has exactly keys "exercise1", "exercise2", "exercise3", and "lexicon".
     **RÈGLES DE VALIDATION:**
     - Vérifiez que les réponses aux questions de grammaire sont 100% correctes.
     - **CRUCIAL:** Pour les verbes au passé composé ou plus-que-parfait, utilisez scrupuleusement le bon auxiliaire (**être** pour partir, arriver, entrer, etc., et les verbes pronominaux).

@@ -11,31 +11,31 @@ export const LANGUAGES: { code: Language; label: string; flag: string }[] = [
 ];
 
 export const GRAMMAR_TOPICS: Topic[] = [
-  { id: 'tenses_comparison', title: 'Passé Composé vs Imparfait vs PQP vs Conditionnel', description: '(For Dummies) When to use which tense.' },
-  { id: 'subjonctif_present', title: 'Le Subjonctif Présent', description: 'Expressing doubt, desire, and necessity.' },
-  { id: 'passe_compose_imparfait', title: 'Passé Composé vs Imparfait', description: 'Mastering the nuances of past tenses.' },
-  { id: 'plus_que_parfait', title: 'Le Plus-que-parfait', description: 'The past before the past.' },
-  { id: 'regret_si_seulement', title: 'Exprimer le Regret (Si seulement...)', description: 'Using "Si seulement..." with past tenses.' },
-  { id: 'futur_proche', title: 'Le Futur Proche', description: 'Expressing immediate, certain future actions (going to do).' },
-  { id: 'futur_simple', title: 'Le Futur Simple', description: 'Talking about future plans, predictions, and conditions.' },
-  { id: 'conditionnel', title: 'Le Conditionnel', description: 'Politeness, wishes, and hypothetical situations.' },
-  { id: 'pronoms_relatifs', title: 'Les Pronoms Relatifs', description: 'Qui, que, dont, où, lequel, etc.' },
-  { id: 'pronoms_objets', title: 'COD & COI', description: 'Direct and Indirect Object Pronouns.' },
-  { id: 'gerondif', title: 'Le Gérondif', description: 'Expressing simultaneous actions (en mangeant).' },
-  { id: 'discours_rapporte', title: 'Le Discours Rapporté', description: 'Reporting what someone else said.' },
-  { id: 'cause_consequence', title: 'La Cause et la Conséquence', description: 'Connecting ideas logically.' },
-  { id: 'negation_complexe', title: 'La Négation Complexe', description: 'Ne...rien, ne...personne, ne...jamais, etc.' },
+  { id: 'tenses_comparison', title: 'Passé Composé vs Imparfait vs PQP vs Conditionnel', description: 'Action Movie Star vs Scenery Painter. Which past tense wins?' },
+  { id: 'subjonctif_present', title: 'Le Subjonctif Présent', description: 'Feeling weird? Emotions, doubts, and the "weird" tense.' },
+  { id: 'passe_compose_imparfait', title: 'Passé Composé vs Imparfait', description: 'Action Star vs Background Painter. Mastering the past.' },
+  { id: 'plus_que_parfait', title: 'Le Plus-que-parfait', description: 'The "Past-Past": what happened BEFORE something else.' },
+  { id: 'regret_si_seulement', title: 'Exprimer le Regret (Si seulement...)', description: 'If only I knew! Expressing your deepest past regrets.' },
+  { id: 'futur_proche', title: 'Le Futur Proche', description: 'Quick Future! Things you are "about to do" right now.' },
+  { id: 'futur_simple', title: 'Le Futur Simple', description: 'The Real Future! Plans, dreams, and what WILL happen.' },
+  { id: 'conditionnel', title: 'Le Conditionnel', description: 'The "Polite" Tense. Dreams, wishes, and politeness.' },
+  { id: 'pronoms_relatifs', title: 'Les Pronoms Relatifs', description: 'Connecting the dots. How to use Qui, Que, and Dont.' },
+  { id: 'pronoms_objets', title: 'COD & COI', description: 'Me, You, Him, Her. Replacing people like a local.' },
+  { id: 'gerondif', title: 'Le Gérondif', description: 'Multitasking! Doing two things at the same time.' },
+  { id: 'discours_rapporte', title: 'Le Discours Rapporté', description: 'The "Gossip" Tense. Reporting what others said.' },
+  { id: 'cause_consequence', title: 'La Cause et la Conséquence', description: 'The "Why" and the "So What". Linking your ideas.' },
+  { id: 'negation_complexe', title: 'La Négation Complexe', description: 'Beyond NO. Never, Nobody, and Nothing.' },
 ];
 
 export const FLASHCARD_GRAMMAR_TOPIC_IDS = [
-    'subjonctif_present', 
-    'passe_compose_imparfait', 
-    'plus_que_parfait',
-    'regret_si_seulement',
-    'futur_simple', 
-    'futur_proche', 
-    'conditionnel', 
-    'pronoms_objets'
+  'subjonctif_present',
+  'passe_compose_imparfait',
+  'plus_que_parfait',
+  'regret_si_seulement',
+  'futur_simple',
+  'futur_proche',
+  'conditionnel',
+  'pronoms_objets'
 ];
 
 export const COMMON_VERBS = [

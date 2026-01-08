@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
-import { Loader2, PlayCircle, Eye, EyeOff, RefreshCw, PenSquare, MessageCircle, Mic, Sparkles, Headphones, ArrowRight } from 'lucide-react';
+import { Loader2, PlayCircle, Eye, EyeOff, RefreshCw, PenSquare, MessageCircle, Mic, Sparkles, Headphones, ArrowRight, XCircle } from 'lucide-react';
 import { getExamenBlancGeneratorData, getSpeech, playAudio, getWritingExample, getSpeakingExample, getWritingFeedback } from '../services/aiService';
 import { Language } from '../types';
 
@@ -236,17 +236,22 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
         setUserAnswers(prev => ({ ...prev, [key]: value }));
     };
 
+    const [error, setError] = useState<string | null>(null);
+
     const generateExam = async () => {
         setLoading(true);
         setExamData(null);
         setCurrentSection(0);
         setShowAnswers(false);
         setUserAnswers({});
+        setError(null);
         try {
             const data = await getExamenBlancGeneratorData(language);
+            if (!data) throw new Error("No data returned");
             setExamData(data);
-        } catch (error) {
-            console.error("Failed to generate exam", error);
+        } catch (err: any) {
+            console.error("Failed to generate exam", err);
+            setError(err.message || "Failed to generate exam. Please check your connection or try again.");
         }
         setLoading(false);
     };
@@ -630,6 +635,22 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                     <Loader2 className="animate-spin text-blue-600 mx-auto mb-4" size={48} />
                     <h3 className="text-xl font-bold text-slate-800 animate-pulse">Création de votre examen en cours...</h3>
                     <p className="text-slate-500 mt-2">Rédaction des dialogues, questions et exercices...</p>
+                </div>
+            )}
+
+            {error && (
+                <div className="bg-white rounded-2xl shadow-xl p-8 text-center border border-red-200">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600 mb-4">
+                        <XCircle size={32} />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800">Generation Failed</h3>
+                    <p className="text-red-600 mt-2 mb-6">{error}</p>
+                    <button
+                        onClick={generateExam}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 mx-auto"
+                    >
+                        <RefreshCw size={18} /> Try Again
+                    </button>
                 </div>
             )}
 
