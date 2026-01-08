@@ -121,11 +121,13 @@ export const resumeAudioContext = geminiService.resumeAudioContext;
 export const getGrammarExplanation = async (topicTitle: string, language: Language): Promise<string> => {
     try {
         const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
+        const userContext = getUserContext();
         const prompt = `Explain the French B1 grammar topic: "${topicTitle}". 
 Provide the explanation in ${language} language.
+${userContext}
 Structure the response with clear headings, bullet points, and plenty of examples.
 Focus on usage, formation, and common mistakes (especially choosing the correct auxiliary 'être' vs 'avoir' for compound tenses).
-Format the entire response using simple Markdown. Use ## for headings, * for bullet points, and ** for important words. Do not use any other Markdown features like blockquotes or code blocks.
+Format the entire response using simple Markdown. Use ## for headings, * for bullet points, and ** for important words.
 Ensure examples are marked. Use a double newline to separate paragraphs.`;
 
         return await callDeepSeek(prompt, systemPrompt);
@@ -138,8 +140,10 @@ Ensure examples are marked. Use a double newline to separate paragraphs.`;
 export const getVerbConjugation = async (verb: string, language: Language): Promise<VerbConjugation> => {
     try {
         const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
+        const userContext = getUserContext();
         const prompt = `Conjugate the French verb "${verb}" for a B1 student. 
 Provide the translation in ${language}.
+${userContext}
 
 **AUXILIARY RULES:**
 - For Passé Composé and Plus-que-parfait, use **être** if the verb is reflexive or among the 17 movement verbs (DR & MRS VANDERTRAMP like partir, arriver, venir, etc.).
@@ -172,7 +176,9 @@ Return ONLY a valid JSON object with this exact structure:
 export const getQuiz = async (topicTitle: string, language: Language): Promise<QuizQuestion[]> => {
     try {
         const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
+        const userContext = getUserContext();
         const prompt = `Generate a JSON array of exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}".
+        ${userContext}
         
         **CRITICAL RULES:**
         1. **Auxiliary Verbs:** In compound tenses (Passé Composé, Plus-que-parfait, etc.), ensure the correct auxiliary is used:
@@ -202,12 +208,15 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
 
 export const getFlashcards = async (category: string, language: Language): Promise<Flashcard[]> => {
     try {
+        const userContext = getUserContext();
         let promptText = `Generate 10 French B1 flashcards for the category/topic: "${category}". 
+${userContext}
 The back of the card must be the translation in ${language}.
 Return ONLY a valid JSON array.`;
 
         if (category === 'Le Plus-que-parfait' || category === 'Exprimer le Regret (Si seulement...)') {
             promptText = `Generate 10 French B1 flashcards for the topic: "${category}". 
+${userContext}
 The flashcards should primarily focus on using the structure "Si seulement..." to express regret (e.g., front: "Si seulement j'avais su.", back: "If only I had known.").
 The back of the card must be the translation in ${language}.
 Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back": "translation", "example": "example sentence"}]`;
@@ -223,7 +232,9 @@ Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back
 
 export const getDailyPhrases = async (topic: string, tense: string, language: Language): Promise<Phrase[]> => {
     try {
+        const userContext = getUserContext();
         let promptText = `Generate 8 useful French sentences for the topic: "${topic}", primarily using the "${tense}" tense.
+${userContext}
 These sentences should be ideal for a B1 level learner.
 Ensure they use common B1 vocabulary and grammatical structures (like subjunctive, conditional, relative pronouns where appropriate).
 Provide a clear translation and a simple context in ${language}.
@@ -231,6 +242,7 @@ Return a valid JSON array with structure: [{"french": "sentence", "translation":
 
         if (topic === 'Si Conditionnel (If Conditional)') {
             promptText = `Generate 8 useful French conditional ("if...then...") sentences.
+${userContext}
 The "si" clause should use the "${tense}" tense.
 The main clause should use the grammatically correct corresponding tense (e.g., Futur Simple for Présent, Conditionnel for Imparfait, Conditionnel Passé for Plus-que-parfait).
 These sentences should be ideal for a B1 level learner.
@@ -238,6 +250,7 @@ Provide a clear translation and a simple context in ${language}.
 Return a valid JSON array.`;
         } else if (topic === 'Si Seulement (If Only)') {
             promptText = `Generate 8 useful French sentences expressing a wish or regret using "Si seulement...".
+${userContext}
 The verb following "Si seulement" should be in the "${tense}" tense.
 Use Imparfait for present wishes and Plus-que-parfait for past regrets.
 These sentences should be ideal for a B1 level learner.
@@ -292,7 +305,9 @@ export const getExamPrompts = async (): Promise<{
 
 export const getWritingFeedback = async (promptText: string, userText: string, language: Language): Promise<string> => {
     try {
+        const userContext = getUserContext();
         const prompt = `En tant que professeur de FLE, évaluez la production écrite suivante pour un niveau B1.
+        ${userContext}
         Consigne: "${promptText}"
         Texte de l'étudiant: "${userText}"
         

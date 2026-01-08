@@ -57,7 +57,7 @@ export default async function handler(req) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            return new Response(errorText, {
+            return new Response(JSON.stringify({ error: 'DeepSeek API Error', details: errorText }), {
                 status: response.status,
                 headers: { ...headers, 'Content-Type': 'application/json' }
             });

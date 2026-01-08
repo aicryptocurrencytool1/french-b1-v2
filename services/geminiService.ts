@@ -130,36 +130,40 @@ export const getGrammarExplanation = async (topicTitle: string, language: Langua
 };
 
 export const getVerbConjugation = async (verb: string, language: Language): Promise<VerbConjugation> => {
+    const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Conjugate "${verb}" for B1 level in ${language}. Return JSON.` }] }],
+        contents: [{ role: "user", parts: [{ text: `Conjugate "${verb}" for B1 level in ${language}. ${context} Return JSON.` }] }],
         config: { responseMimeType: "application/json" }
     });
     return parseGeminiJson<VerbConjugation>(response.candidates?.[0]?.content?.parts?.[0]?.text);
 };
 
 export const getQuiz = async (topicTitle: string, language: Language): Promise<QuizQuestion[]> => {
+    const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Generate 10 B1 quiz questions for "${topicTitle}" in ${language}. Return JSON array of objects with correct index and explanation.` }] }],
+        contents: [{ role: "user", parts: [{ text: `Generate 10 B1 quiz questions for "${topicTitle}" in ${language}. ${context} Return JSON array of objects with correct index and explanation.` }] }],
         config: { responseMimeType: "application/json" }
     });
     return parseGeminiJson<QuizQuestion[]>(response.candidates?.[0]?.content?.parts?.[0]?.text);
 };
 
 export const getFlashcards = async (category: string, language: Language): Promise<Flashcard[]> => {
+    const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Generate 10 B1 flashcards for "${category}" in ${language}. Return JSON array.` }] }],
+        contents: [{ role: "user", parts: [{ text: `Generate 10 B1 flashcards for "${category}" in ${language}. ${context} Return JSON array.` }] }],
         config: { responseMimeType: "application/json" }
     });
     return parseGeminiJson<Flashcard[]>(response.candidates?.[0]?.content?.parts?.[0]?.text);
 };
 
 export const getDailyPhrases = async (topic: string, tense: string, language: Language): Promise<Phrase[]> => {
+    const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Generate 8 B1 phrases for "${topic}" in "${tense}" tense. Return JSON array.` }] }],
+        contents: [{ role: "user", parts: [{ text: `Generate 8 B1 phrases for "${topic}" in "${tense}" tense. ${context} Return JSON array.` }] }],
         config: { responseMimeType: "application/json" }
     });
     return parseGeminiJson<Phrase[]>(response.candidates?.[0]?.content?.parts?.[0]?.text);
@@ -175,9 +179,10 @@ export const getExamPrompts = async (): Promise<any> => {
 };
 
 export const getWritingFeedback = async (prompt: string, userText: string, language: Language): Promise<string> => {
+    const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Evaluate this B1 French text for prompt "${prompt}": "${userText}". Provide feedback in ${language} with appreciation, identified errors and a full correction text.` }] }],
+        contents: [{ role: "user", parts: [{ text: `Evaluate this B1 French text for prompt "${prompt}": "${userText}". ${context} Provide feedback in ${language} with appreciation, identified errors and a full correction text.` }] }],
     });
     return response.candidates?.[0]?.content?.parts?.[0]?.text || "";
 };
