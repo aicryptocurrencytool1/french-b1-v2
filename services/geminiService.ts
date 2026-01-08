@@ -121,9 +121,10 @@ export const getGrammarExplanation = async (topicTitle: string, language: Langua
         model: modelName,
         contents: [{
             role: "user", parts: [{
-                text: `Explain French B1 grammar topic: "${topicTitle}" in ${language}. 
+                text: `Explain French B1 grammar for Ahmad: "${topicTitle}" in ${language}. 
         ${context}
-        Structure with clear headings and simplified A2-B1 examples. Format in Markdown.` }]
+        Use the "For Dummies" style (simple/clear). Use metaphors (Action Movie Star vs Scenery Painter). 
+        Use examples from Liège (Citadelle) or Lebanon. Format in Markdown.` }]
         }],
     });
     return response.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -143,7 +144,13 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
     const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Generate 10 B1 quiz questions for "${topicTitle}" in ${language}. ${context} Return JSON array of objects with correct index and explanation.` }] }],
+        contents: [{
+            role: "user", parts: [{
+                text: `Generate 10 B1 quiz questions for Ahmad: "${topicTitle}" in ${language}. 
+        ${context}
+        Use Ahmad's context (Liège/Lebanon) for the questions. Propose simple explanations in ${language}. Return JSON.`
+            }]
+        }],
         config: { responseMimeType: "application/json" }
     });
     return parseGeminiJson<QuizQuestion[]>(response.candidates?.[0]?.content?.parts?.[0]?.text);
@@ -153,7 +160,7 @@ export const getFlashcards = async (category: string, language: Language): Promi
     const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Generate 10 B1 flashcards for "${category}" in ${language}. ${context} Return JSON array.` }] }],
+        contents: [{ role: "user", parts: [{ text: `Generate 10 B1 flashcards for Ahmad: "${category}" in ${language}. ${context} Use Liège/Lebanon examples. Return JSON.` }] }],
         config: { responseMimeType: "application/json" }
     });
     return parseGeminiJson<Flashcard[]>(response.candidates?.[0]?.content?.parts?.[0]?.text);
@@ -163,7 +170,7 @@ export const getDailyPhrases = async (topic: string, tense: string, language: La
     const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Generate 8 B1 phrases for "${topic}" in "${tense}" tense. ${context} Return JSON array.` }] }],
+        contents: [{ role: "user", parts: [{ text: `Generate 8 B1 phrases for Ahmad: "${topic}" in "${tense}" for Ahmad. ${context} Use his life (Liège/Lebanon) as examples. Return JSON.` }] }],
         config: { responseMimeType: "application/json" }
     });
     return parseGeminiJson<Phrase[]>(response.candidates?.[0]?.content?.parts?.[0]?.text);
@@ -182,7 +189,12 @@ export const getWritingFeedback = async (prompt: string, userText: string, langu
     const context = getUserContext();
     const response: any = await ai.models.generateContent({
         model: modelName,
-        contents: [{ role: "user", parts: [{ text: `Evaluate this B1 French text for prompt "${prompt}": "${userText}". ${context} Provide feedback in ${language} with appreciation, identified errors and a full correction text.` }] }],
+        contents: [{
+            role: "user", parts: [{
+                text: `Encouraging B1 feedback for Ahmad on prompt "${prompt}": "${userText}". ${context}
+        Output in ${language} with Appreciation, "For Dummies" error guide, and a "Champion version" correcting everything.`
+            }]
+        }],
     });
     return response.candidates?.[0]?.content?.parts?.[0]?.text || "";
 };
@@ -250,9 +262,10 @@ export const getExamenBlancGeneratorData = async (language: Language): Promise<a
         model: modelName,
         contents: [{
             role: "user", parts: [{
-                text: `Generate a full Examen Blanc B1 in ${language}. 
+                text: `Generate a full Examen Blanc B1 for Ahmad in ${language}. 
         ${context}
-        Return JSON.` }]
+        Use his life in Liège (Citadelle) and Lebanon as context. 
+        Include clear "For Dummies" style instructions for grammar sections. Return JSON.` }]
         }],
         config: { responseMimeType: "application/json" }
     });

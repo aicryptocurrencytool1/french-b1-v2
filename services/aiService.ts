@@ -189,25 +189,29 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
     try {
         const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
         const userContext = getUserContext();
-        const prompt = `Generate a JSON array of exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}".
+        const prompt = `Generate a JSON array of exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}" for a student named Ahmad.
         ${userContext}
+        
+        **CONTENT STRATEGY:**
+        - Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** as the context for the question sentences.
+        - Ensure questions are practical and relatable (e.g., describing his apartment, going to the bakery in Liège, his childhood in Lebanon).
         
         **CRITICAL RULES:**
         1. **Auxiliary Verbs:** In compound tenses (Passé Composé, Plus-que-parfait, etc.), ensure the correct auxiliary is used:
-           - Use **être** for the 17 verbs of movement/change of state (DR & MRS VANDERTRAMP: devenir, revenir, monter, rester, sortir, venir, aller, naître, descendre, entrer, rentrer, tomber, retourner, arriver, mourir, partir, passer).
+           - Use **être** for the 17 verbs of movement/change of state (DR & MRS VANDERTRAMP).
            - Use **être** for all reflexive/pronominal verbs.
            - Use **avoir** for other verbs.
         2. **Agreement:** Past participles must agree with the subject when using 'être'.
-        3. **Logic:** The correct answer MUST be grammatically perfect. Double-check your logic before generating.
+        3. **Logic:** The correct answer MUST be grammatically perfect.
         
         The questions and options must be in French.
-        The explanation for the correct answer must be in ${language}.
+        The explanation for the correct answer must be in ${language} and follow a simple "For Dummies" style.
         Return ONLY a valid JSON array with this structure:
         [{
           "question": "question text in French",
           "options": ["option1", "option2", "option3", "option4"],
           "correctAnswerIndex": 0,
-          "explanation": "explanation in ${language}"
+          "explanation": "Simple pedagogical explanation in ${language}"
         }]`;
 
         const response = await callDeepSeek(prompt, systemPrompt, true);
@@ -221,17 +225,18 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
 export const getFlashcards = async (category: string, language: Language): Promise<Flashcard[]> => {
     try {
         const userContext = getUserContext();
-        let promptText = `Generate 10 French B1 flashcards for the category/topic: "${category}". 
+        let promptText = `Generate 10 French B1 flashcards for the category/topic: "${category}" for a student named Ahmad. 
 ${userContext}
+**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** for the examples.
 The back of the card must be the translation in ${language}.
-Return ONLY a valid JSON array.`;
+Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back": "translation", "example": "Personalized example sentence"}]`;
 
         if (category === 'Le Plus-que-parfait' || category === 'Exprimer le Regret (Si seulement...)') {
-            promptText = `Generate 10 French B1 flashcards for the topic: "${category}". 
+            promptText = `Generate 10 French B1 flashcards for the topic: "${category}" for a student named Ahmad. 
 ${userContext}
-The flashcards should primarily focus on using the structure "Si seulement..." to express regret (e.g., front: "Si seulement j'avais su.", back: "If only I had known.").
+**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** for the examples. Focus on using the structure "Si seulement..." to express regret (e.g., front: "Si seulement j'avais su.", back: "If only I had known.").
 The back of the card must be the translation in ${language}.
-Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back": "translation", "example": "example sentence"}]`;
+Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back": "translation", "example": "Personalized example sentence"}]`;
         }
 
         const response = await callDeepSeek(promptText, undefined, true);
@@ -245,28 +250,23 @@ Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back
 export const getDailyPhrases = async (topic: string, tense: string, language: Language): Promise<Phrase[]> => {
     try {
         const userContext = getUserContext();
-        let promptText = `Generate 8 useful French sentences for the topic: "${topic}", primarily using the "${tense}" tense.
+        let promptText = `Generate 8 useful French sentences for the topic: "${topic}", primarily using the "${tense}" tense for a student named Ahmad.
 ${userContext}
-These sentences should be ideal for a B1 level learner.
-Ensure they use common B1 vocabulary and grammatical structures (like subjunctive, conditional, relative pronouns where appropriate).
-Provide a clear translation and a simple context in ${language}.
+**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** for the sentences.
+Ensure they use common B1 vocabulary. Provide a clear translation and a simple context in ${language}.
 Return a valid JSON array with structure: [{"french": "sentence", "translation": "translation", "context": "context"}]`;
 
         if (topic === 'Si Conditionnel (If Conditional)') {
-            promptText = `Generate 8 useful French conditional ("if...then...") sentences.
+            promptText = `Generate 8 useful French conditional ("if...then...") sentences for a student named Ahmad.
 ${userContext}
-The "si" clause should use the "${tense}" tense.
-The main clause should use the grammatically correct corresponding tense (e.g., Futur Simple for Présent, Conditionnel for Imparfait, Conditionnel Passé for Plus-que-parfait).
-These sentences should be ideal for a B1 level learner.
-Provide a clear translation and a simple context in ${language}.
+**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon**.
+The "si" clause should use the "${tense}" tense. Provide a clear translation and a simple context in ${language}.
 Return a valid JSON array.`;
         } else if (topic === 'Si Seulement (If Only)') {
-            promptText = `Generate 8 useful French sentences expressing a wish or regret using "Si seulement...".
+            promptText = `Generate 8 useful French sentences expressing a wish or regret using "Si seulement..." for a student named Ahmad.
 ${userContext}
-The verb following "Si seulement" should be in the "${tense}" tense.
-Use Imparfait for present wishes and Plus-que-parfait for past regrets.
-These sentences should be ideal for a B1 level learner.
-Provide a clear translation and a simple context in ${language}.
+**CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon**.
+The verb following "Si seulement" should be in the "${tense}" tense. Provide a clear translation and a simple context in ${language}.
 Return a valid JSON array.`;
         }
 
@@ -318,20 +318,22 @@ export const getExamPrompts = async (): Promise<{
 export const getWritingFeedback = async (promptText: string, userText: string, language: Language): Promise<string> => {
     try {
         const userContext = getUserContext();
-        const prompt = `En tant que professeur de FLE, évaluez la production écrite suivante pour un niveau B1.
+        const prompt = `En tant que professeur de FLE encourageant, évaluez la production écrite suivante pour un niveau B1 de Ahmad.
         ${userContext}
         Consigne: "${promptText}"
         Texte de l'étudiant: "${userText}"
         
+        **PEDAGOGICAL STYLE:** Soyez bienveillant et clair. Utilisez le style "For Dummies" pour les explications d'erreurs.
+        
         Fournissez un feedback constructif en ${language} selon cette STRUCTURE STRICTE :
         ## 1. Appréciation globale
-        (Une phrase sur la qualité générale)
+        (Une phrase positive sur l'effort de Ahmad et la qualité générale)
         
-        ## 2. Identification des erreurs
-        (Listez les erreurs spécifiques trouvées : grammaire, conjugaison, vocabulaire, orthographe. Pour chaque erreur, citez le passage original entre guillemets et expliquez la correction).
+        ## 2. Guide des erreurs (Style simple)
+        (Listez les erreurs spécifiques. Pour chaque erreur, expliquez POURQUOI c'est une erreur de manière simple, comme à un ami).
         
-        ## 3. Proposition de correction complète
-        (Réécrivez l'INTÉGRALITÉ du texte de l'étudiant de manière correcte et naturelle pour un niveau B1).
+        ## 3. Version "Champion" (Texte corrigé)
+        (Réécrivez l'INTÉGRALITÉ du texte de Ahmad de manière naturelle pour un B1, en intégrant des éléments de son profil si possible).
         
         Utilisez le Markdown pour la mise en forme (##, *, **).`;
 
@@ -345,15 +347,12 @@ export const getWritingFeedback = async (promptText: string, userText: string, l
 export const getWritingExample = async (promptText: string): Promise<{ modelAnswer: string; analysis: string; }> => {
     try {
         const userContext = getUserContext();
-        const prompt = `Pour la consigne de niveau B1 suivante: "${promptText}", générez un objet JSON contenant:
-        1. Un texte modèle ('modelAnswer') en français qui répond parfaitement à la consigne. 
+        const prompt = `Pour une consigne B1: "${promptText}", générez un objet JSON pour l'étudiant Ahmad :
+        1. Un texte modèle ('modelAnswer') de EXACTEMENT **8 à 10 phrases**. 
            ${userContext}
-           **RÈGLE CRUCIALE :** Le texte doit faire EXACTEMENT entre **8 et 10 phrases**.
-           Utilisez un **VOCABULAIRE SIMPLE** (A2-B1) et des structures naturelles mais faciles. Évitez les tournures compliquées.
-           Utilisez les TEMPS VERBAUX les plus appropriés à la situation.
-           Utilisez les informations du profil ci-dessus pour créer une réponse PERSONNALISÉE et RÉALISTE.
-           Mettez en gras (**mot**) les verbes conjugués et les connecteurs logiques.
-        2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1. Formatez l'analyse en Markdown simple.`;
+           Use a **SIMPLE VOCABULARY** (A2-B1). Highlight (**bold**) conjugated verbs and connectors.
+           Personalize the response based on the profile (Liège, Citadelle, Lebanon).
+        2. Une brève analyse ('analysis') en français (style pédagogique simple) expliquant pourquoi c'est un bon exemple.`;
 
         const response = await callDeepSeek(prompt, undefined, true);
         return parseJSON<{ modelAnswer: string; analysis: string; }>(response);
@@ -366,11 +365,10 @@ export const getWritingExample = async (promptText: string): Promise<{ modelAnsw
 export const getSpeakingExample = async (promptText: string, language: Language): Promise<{ text: string; audio: string }> => {
     try {
         const userContext = getUserContext();
-        const prompt = `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${promptText}". 
-        La réponse doit être naturelle et fluide.
+        const prompt = `Générez une réponse modèle en français pour Ahmad (Niveau B1) pour: "${promptText}". 
         ${userContext}
-        **RÈGLE CRUCIALE :** Le texte doit faire EXACTEMENT entre **8 et 10 phrases**.
-        Utilisez les TEMPS VERBAUX les plus appropriés à la situation et les informations du profil ci-dessus pour créer une réponse PERSONNALISÉE.`;
+        **RÈGLE CRUCIALE :** Texte de EXACTEMENT **8 à 10 phrases**.
+        Use personalized info (Liège, Citadelle, Lebanon).`;
 
         const text = await callDeepSeek(prompt);
         let audio = "";
@@ -418,46 +416,34 @@ export const getReadingExample = async (promptText: string): Promise<{ text: str
 
 export const getComprehensiveExamData = async (language: Language) => {
     try {
+        const userContext = getUserContext();
         const prompt = `
-    Créez un examen complet de français niveau B1, en respectant scrupuleusement le syllabus fourni. Le vocabulaire doit être STRICTEMENT adapté au niveau A2-B1 (mots fréquents et simples). Retournez un seul objet JSON valide.
-
-    **Syllabus Clés (Strict):**
-    1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
-    2.  **Savoir (Compétences):**
-        - Raconter un événement au passé en articulant les temps (PC, Imparfait, PQP).
-        - Présenter son logement ou son quartier.
-        - Exprimer des souhaits (conditionnel).
-        - Résumer un fait divers.
-        - Exprimer des actions futures.
-    3.  **Langue (Grammaire):**
-        - Passé: Imparfait, Plus-que-parfait, Passé composé.
-        - Présent: Indicatif et Conditionnel.
-        - Futur: Simple et Proche.
-        - Structures: "Si j'avais..., j'aurais..." / "Si seulement il avait fait ça !".
-
-    **Structure JSON de sortie:**
+    Créez un examen complet B1 pour Ahmad, en respectant le syllabus. Vocabulaire A2-B1.
+    ${userContext}
+    
+    **SYLLABUS & CONTEXTE:**
+    - Logement/Quartier: **Liège (Citadelle)**.
+    - Enfance/Projets: **Liban**.
+    - Grammaire: PC, Imparfait, PQP, Conditionnel.
+    
+    **JSON Structure:**
     {
       "listening": {
-        "text": "Un dialogue de ~120 mots entre deux personnes sur un des thèmes, utilisant un mélange des temps requis. Utilisez des sauts de ligne entre chaque intervenant (ex: Sophie: ...\nMarc: ...).",
-        "questions": [ { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswerIndex": 0, "explanation": "Explication en ${language}" } ] // 4 questions
+        "text": "Dialogue (~120 mots) entre deux personnes. Format: Sophie: ...\nMarc: ...",
+        "questions": [ { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswerIndex": 0, "explanation": "Simple pédagogie en ${language}" } ]
       },
       "reading": {
-        "text": "Un texte court de ~150 mots (email, blog post) sur un des thèmes, utilisant un mélange des temps requis.",
-        "questions": [ { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswerIndex": 0, "explanation": "Explication en ${language}" } ] // 4 questions
+        "text": "Texte court (~150 mots). Utiliser le contexte de Liège ou du Liban.",
+        "questions": [ { "question": "...", "options": ["...", "...", "...", "..."], "correctAnswerIndex": 0, "explanation": "Simple pédagogie en ${language}" } ]
       },
       "writing": {
-        "prompt": "Un sujet qui demande explicitement à l'étudiant de raconter une expérience passée en utilisant l'imparfait pour la description et le passé composé pour les actions."
+        "prompt": "Sujet personnalisé demandant de raconter une expérience (PC/Imparfait) ou projet futur."
       },
       "speaking": {
-        "continuousPrompt": "Un sujet de production orale en continu qui demande de décrire une expérience personnelle ou de parler de projets futurs.",
-        "interactionPrompt": "Un scénario de jeu de rôle pour une interaction orale qui nécessite d'échanger des informations sur des événements passés et futurs."
+        "continuousPrompt": "Monologue sur un souvenir au Liban ou un projet à Liège.",
+        "interactionPrompt": "Jeu de rôle à Liège."
       }
-    }
-    **Instructions Spécifiques:**
-    - Pour les thèmes "Logement" and "Quartier", la réponse ou le scénario DOIT se dérouler en **Belgique** (ex: Bruxelles).
-    - **RÈGLE D'OR GRAMMATICALE:** Vérifiez scrupuleusement le choix de l'auxiliaire (être vs avoir) pour le Passé Composé et le Plus-que-parfait (ex: partir, arriver, entrer utilisent 'être').
-    Assurez-vous que le contenu de chaque section (listening, reading, writing, speaking) reflète fidèlement les thèmes et la grammaire du syllabus.
-    `;
+    }`;
 
         const response = await callDeepSeek(prompt.replace('${language}', language), "Expert French Teacher", true);
         const examData = parseJSON<any>(response);
