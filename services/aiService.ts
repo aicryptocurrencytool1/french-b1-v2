@@ -3,6 +3,7 @@
 
 import * as geminiService from './geminiService';
 import { VerbConjugation, QuizQuestion, Flashcard, Phrase, Language } from "../types";
+import { getUserContext } from '../userProfile';
 
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 const DEEPSEEK_MODEL = 'deepseek-chat';
@@ -312,10 +313,11 @@ export const getWritingFeedback = async (promptText: string, userText: string, l
 
 export const getWritingExample = async (promptText: string): Promise<{ modelAnswer: string; analysis: string; }> => {
     try {
+        const userContext = getUserContext();
         const prompt = `Pour la consigne de niveau B1 suivante: "${promptText}", générez un objet JSON contenant:
         1. Un texte modèle ('modelAnswer') en français (80-100 mots) qui répond parfaitement à la consigne. Utilisez un vocabulaire simple et courant (niveau A2-B1). 
-           - Si le sujet concerne le **logement** ou le **quartier**, situez l'action à **Liège** (Belgique).
-           - Si le sujet concerne l'**enfance** ou des **souvenirs**, situez l'action au **Liban**.
+           ${userContext}
+           Utilisez les informations du profil ci-dessus pour créer une réponse PERSONNALISÉE et RÉALISTE.
            Mettez en gras (**mot**) les verbes conjugués et les connecteurs logiques.
         2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1 (utilisation des temps, vocabulaire, connecteurs). Formatez l'analyse en Markdown simple avec des titres (##) et des listes (*).`;
 
@@ -331,9 +333,10 @@ export const getWritingExample = async (promptText: string): Promise<{ modelAnsw
 
 export const getSpeakingExample = async (promptText: string, language: Language): Promise<{ text: string; audio: string }> => {
     try {
+        const userContext = getUserContext();
         const prompt = `Générez une réponse modèle en français pour un étudiant B1 pour le sujet de conversation suivant: "${promptText}". La réponse doit être naturelle, comme si quelqu'un parlait, et faire environ 1 minute de parole. La réponse doit utiliser des temps et du vocabulaire simples et pertinents pour le niveau A2-B1. 
-        - Si le sujet concerne le **logement** ou le **quartier**, situez l'action à **Liège** (Belgique).
-        - Si le sujet concerne l'**enfance** ou des **souvenirs**, situez l'action au **Liban**.`;
+        ${userContext}
+        Utilisez les informations du profil ci-dessus pour créer une réponse PERSONNALISÉE et RÉALISTE qui reflète la vie de l'étudiant.`;
 
         const text = await callDeepSeek(prompt);
         let audio = "";
@@ -451,8 +454,13 @@ export const getComprehensiveExamData = async (language: Language) => {
 
 export const getExamenBlancGeneratorData = async (language: Language) => {
     try {
+        const userContext = getUserContext();
         const prompt = `
     Créez un EXAMEN BLANC complet (type B1 FLE), basé sur le guide "Groupe de FLE Caramel : évaluations de janvier 2025".
+
+    ${userContext}
+    
+    **INSTRUCTION PRIORITAIRE :** Utilisez les informations du profil ci-dessus pour personnaliser TOUS les contenus de l'examen (dialogues, textes, sujets d'écriture, situations orales). Les exemples doivent refléter la vie réelle de l'étudiant.
 
     **Syllabus & Contraintes:**
     1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
