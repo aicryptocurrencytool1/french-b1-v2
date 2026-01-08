@@ -6,7 +6,7 @@ import { getUserContext } from "../userProfile";
 // Fallback to Gemini keys only
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.VITE_API_KEY;
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY || "" });
-const modelName = 'gemini-1.5-flash-latest'; // Using the latest tag for best compatibility
+const modelName = 'gemini-pro'; // Standard stable model for v1beta
 
 const parseGeminiJson = <T>(text: string | undefined): T => {
     if (!text) {
