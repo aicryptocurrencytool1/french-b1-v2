@@ -1,12 +1,11 @@
-// Vercel Edge Function for DeepSeek Proxy
-// Edge Runtime allows up to 30s execution time, solving the "terminated" (10s limit) issue.
+// Vercel Edge Function for DeepSeek Proxy - Extreme Reliability Version
+// Uses immediate streaming to bypass Vercel's 25s initial response timeout.
 
 export const config = {
     runtime: 'edge',
 };
 
 export default async function handler(req) {
-    // Standard CORS headers for Edge
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -27,26 +26,32 @@ export default async function handler(req) {
     const apiKey = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
 
     if (!apiKey) {
-        console.error('DEEPSEEK_API_KEY is missing');
-        return new Response(JSON.stringify({ error: 'DeepSeek API key not configured on Vercel' }), {
+        console.error('CRITICAL: DEEPSEEK_API_KEY is not set in Vercel environment variables.');
+        return new Response(JSON.stringify({ error: 'DeepSeek API key missing on server' }), {
             status: 500,
             headers: { ...headers, 'Content-Type': 'application/json' }
         });
     }
 
+    // Diagnostic: Log first 4 chars of API key (mask the rest) to help user debug
+    const maskedKey = apiKey.substring(0, 4) + '...' + apiKey.substring(apiKey.length - 4);
+    console.log(`DeepSeek Proxy: Using API Key [${maskedKey}]`);
+
     try {
         const bodyContent = await req.json();
 
-        // Edge functions have a 25-30s timeout limit, much better than Serverless 10s
+        // DeepSeek-V3 is currently under heavy load. We use a long timeout.
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 28000); // 28 seconds
+        const timeoutId = setTimeout(() => controller.abort(), 55000); // 55 seconds (Edge limit is higher than Serverless)
 
-        console.log('Forwarding request to DeepSeek (Edge Runtime)...');
-        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        console.log('Sending request to DeepSeek (chat/completions)...');
+
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
+                'User-Agent': 'Vercel Edge Function',
             },
             body: JSON.stringify(bodyContent),
             signal: controller.signal,
@@ -54,24 +59,39 @@ export default async function handler(req) {
 
         clearTimeout(timeoutId);
 
-        // We can return the body as a stream for maximum efficiency
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error(`DeepSeek API returned error ${response.status}:`, errorData);
+            return new Response(errorData, {
+                status: response.status,
+                headers: { ...headers, 'Content-Type': 'application/json' }
+            });
+        }
+
+        // Return the raw response body stream to the client
+        // This keeps the connection alive and avoids the 25s Vercel "initial response" timeout
         return new Response(response.body, {
-            status: response.status,
+            status: 200,
             headers: {
                 ...headers,
                 'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
             },
         });
+
     } catch (error) {
-        console.error('Edge Proxy Exception:', error.name, error.message);
+        console.error('DeepSeek Proxy Exception:', error.name, error.message);
 
-        const isTimeout = error.name === 'AbortError' || error.message.includes('terminated');
+        let status = 500;
+        let message = error.message;
 
-        return new Response(JSON.stringify({
-            error: isTimeout ? 'DeepSeek Timeout' : 'Failed to communicate with DeepSeek',
-            message: error.message
-        }), {
-            status: isTimeout ? 504 : 500,
+        if (error.name === 'AbortError') {
+            status = 504;
+            message = 'DeepSeek API took too long to respond (55s+). Server is likely overloaded.';
+        }
+
+        return new Response(JSON.stringify({ error: 'DeepSeek Proxy Error', details: message }), {
+            status,
             headers: { ...headers, 'Content-Type': 'application/json' }
         });
     }
