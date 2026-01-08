@@ -1,5 +1,5 @@
-// Vercel Edge Function for DeepSeek Proxy - Stability Focus
-// Edge Runtime allows up to 30s execution time.
+// Vercel Edge Function for DeepSeek Proxy - Time-Safe Version
+// Ensures a response is returned within Vercel's 25s window.
 
 export const config = {
     runtime: 'edge',
@@ -26,7 +26,6 @@ export default async function handler(req) {
     const apiKey = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
 
     if (!apiKey) {
-        console.error('DEEPSEEK_API_KEY is not set.');
         return new Response(JSON.stringify({ error: 'DeepSeek API key missing on server' }), {
             status: 500,
             headers: { ...headers, 'Content-Type': 'application/json' }
@@ -36,17 +35,19 @@ export default async function handler(req) {
     try {
         const bodyContent = await req.json();
 
-        // Edge functions have a 25-30s timeout limit.
+        // Vercel Edge MUST return a response within 25 seconds.
+        // We set our timeout to 22 seconds to be safe.
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 28000); // 28 seconds
+        const timeoutId = setTimeout(() => controller.abort(), 22000);
 
-        console.log('Forwarding request to DeepSeek...');
+        console.log('Fetching DeepSeek with 22s safety timeout...');
+
         const response = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
-                'User-Agent': 'French-B1-App',
+                'User-Agent': 'French-B1-Master-App',
             },
             body: JSON.stringify(bodyContent),
             signal: controller.signal,
@@ -54,10 +55,8 @@ export default async function handler(req) {
 
         clearTimeout(timeoutId);
 
-        // Standard JSON handling to ensure the client receives a valid object
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`DeepSeek API error ${response.status}:`, errorText);
             return new Response(errorText, {
                 status: response.status,
                 headers: { ...headers, 'Content-Type': 'application/json' }
@@ -74,18 +73,15 @@ export default async function handler(req) {
         });
 
     } catch (error) {
-        console.error('DeepSeek Proxy Exception:', error.name, error.message);
+        console.error('DeepSeek Proxy Error:', error.name, error.message);
 
-        let status = 500;
-        let message = error.message;
+        const isTimeout = error.name === 'AbortError';
 
-        if (error.name === 'AbortError') {
-            status = 504;
-            message = 'DeepSeek API took too long to respond (28s+). Falling back to Gemini.';
-        }
-
-        return new Response(JSON.stringify({ error: 'DeepSeek Proxy Error', details: message }), {
-            status,
+        return new Response(JSON.stringify({
+            error: 'DeepSeek Proxy Failure',
+            details: isTimeout ? 'DeepSeek took too long (>22s). Falling back and switching to Gemini.' : error.message
+        }), {
+            status: isTimeout ? 504 : 500,
             headers: { ...headers, 'Content-Type': 'application/json' }
         });
     }
