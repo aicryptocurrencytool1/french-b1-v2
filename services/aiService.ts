@@ -126,8 +126,8 @@ Ensure examples are marked. Use a double newline to separate paragraphs.`;
 
         return await callDeepSeek(prompt, systemPrompt);
     } catch (error: any) {
-        console.error("Error fetching grammar:", error);
-        return "Désolé, une erreur est survenue lors de la connexion au service d'IA.";
+        console.warn("DeepSeek grammar fetch failed, falling back to Gemini:", error);
+        return await geminiService.getGrammarExplanation(topicTitle, language);
     }
 };
 
@@ -160,8 +160,8 @@ Return ONLY a valid JSON object with this exact structure:
         const response = await callDeepSeek(prompt, systemPrompt, true);
         return parseJSON<VerbConjugation>(response);
     } catch (error: any) {
-        console.error("Error fetching conjugation:", error);
-        throw error;
+        console.warn("DeepSeek conjugation fetch failed, falling back to Gemini:", error);
+        return await geminiService.getVerbConjugation(verb, language);
     }
 };
 
@@ -191,8 +191,8 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
         const response = await callDeepSeek(prompt, systemPrompt, true);
         return parseJSON<QuizQuestion[]>(response);
     } catch (error: any) {
-        console.error("Quiz generation failed:", error);
-        return [];
+        console.warn("DeepSeek quiz generation failed, falling back to Gemini:", error);
+        return await geminiService.getQuiz(topicTitle, language);
     }
 };
 
@@ -212,8 +212,8 @@ Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back
         const response = await callDeepSeek(promptText, undefined, true);
         return parseJSON<Flashcard[]>(response);
     } catch (error: any) {
-        console.error("Flashcard generation failed:", error);
-        return [];
+        console.warn("DeepSeek flashcard generation failed, falling back to Gemini:", error);
+        return await geminiService.getFlashcards(category, language);
     }
 };
 
@@ -244,8 +244,8 @@ Return a valid JSON array.`;
         const response = await callDeepSeek(promptText, undefined, true);
         return parseJSON<Phrase[]>(response);
     } catch (error: any) {
-        console.error("Phrase generation failed:", error);
-        return [];
+        console.warn("DeepSeek phrase generation failed, falling back to Gemini:", error);
+        return await geminiService.getDailyPhrases(topic, tense, language);
     }
 };
 
@@ -281,14 +281,8 @@ export const getExamPrompts = async (): Promise<{
         const response = await callDeepSeek(prompt, undefined, true);
         return parseJSON<any>(response);
     } catch (error: any) {
-        console.error("Exam prompt generation failed:", error);
-        return {
-            listening: "Écoutez ce dialogue entre deux amis qui parlent de leurs dernières vacances.",
-            reading: "Lisez ce courriel d'un ami qui vous invite à visiter sa nouvelle maison à Bruxelles.",
-            writing: "Racontez un souvenir d'enfance. Décrivez où vous étiez (imparfait) et racontez une chose amusante qui est arrivée (passé composé).",
-            speakingContinuous: "Décrivez votre week-end idéal. Qu'est-ce que vous feriez s'il n'y avait aucune limite ?",
-            speakingInteraction: "Vous voulez réserver une table dans un restaurant pour l'anniversaire d'un ami. Téléphonez au restaurant pour demander des informations et faire une réservation."
-        };
+        console.warn("DeepSeek exam prompt generation failed, falling back to Gemini:", error);
+        return await geminiService.getExamPrompts();
     }
 };
 
@@ -312,8 +306,8 @@ export const getWritingFeedback = async (promptText: string, userText: string, l
 
         return await callDeepSeek(prompt);
     } catch (error: any) {
-        console.error("Writing feedback failed:", error);
-        return "Impossible de générer le feedback pour le moment.";
+        console.warn("DeepSeek writing feedback failed, falling back to Gemini:", error);
+        return await geminiService.getWritingFeedback(promptText, userText, language);
     }
 };
 
@@ -333,8 +327,8 @@ export const getWritingExample = async (promptText: string): Promise<{ modelAnsw
         const response = await callDeepSeek(prompt, undefined, true);
         return parseJSON<{ modelAnswer: string; analysis: string; }>(response);
     } catch (error: any) {
-        console.error("Writing example failed:", error);
-        return { modelAnswer: "Désolé, impossible de générer un exemple de réponse.", analysis: "" };
+        console.warn("DeepSeek writing example failed, falling back to Gemini:", error);
+        return await geminiService.getWritingExample(promptText);
     }
 };
 
@@ -356,8 +350,8 @@ export const getSpeakingExample = async (promptText: string, language: Language)
         }
         return { text, audio };
     } catch (error: any) {
-        console.error("Speaking example failed:", error);
-        return { text: "Désolé, je ne sais pas quoi dire pour le moment.", audio: "" };
+        console.warn("DeepSeek speaking example failed, falling back to Gemini:", error);
+        return await geminiService.getSpeakingExample(promptText, language);
     }
 };
 
@@ -374,8 +368,8 @@ export const getListeningExample = async (promptText: string): Promise<{ text: s
         }
         return { text, audio };
     } catch (error: any) {
-        console.error("Listening example failed:", error);
-        return { text: "Erreur de génération du dialogue.", audio: "" };
+        console.warn("DeepSeek listening example failed, falling back to Gemini:", error);
+        return await geminiService.getListeningExample(promptText);
     }
 };
 
@@ -386,8 +380,8 @@ export const getReadingExample = async (promptText: string): Promise<{ text: str
         const text = await callDeepSeek(prompt);
         return { text };
     } catch (error: any) {
-        console.error("Reading example failed:", error);
-        return { text: "Erreur de génération du texte." };
+        console.warn("DeepSeek reading example failed, falling back to Gemini:", error);
+        return await geminiService.getReadingExample(promptText);
     }
 };
 
@@ -447,8 +441,8 @@ export const getComprehensiveExamData = async (language: Language) => {
 
         return examData;
     } catch (error: any) {
-        console.error("Comprehensive exam generation failed:", error);
-        throw new Error("Échec de la génération de l'examen.");
+        console.warn("DeepSeek comprehensive exam failed, falling back to Gemini:", error);
+        return await geminiService.getComprehensiveExamData(language);
     }
 };
 
@@ -536,8 +530,8 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
         }
         return examData;
     } catch (error: any) {
-        console.error("Examen Blanc generation failed:", error);
-        throw new Error("Échec de la génération de l'examen.");
+        console.warn("DeepSeek Examen Blanc generation failed, falling back to Gemini:", error);
+        return await geminiService.getExamenBlancGeneratorData(language);
     }
 };
 
