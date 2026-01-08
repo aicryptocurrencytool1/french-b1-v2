@@ -126,11 +126,8 @@ Ensure examples are marked. Use a double newline to separate paragraphs.`;
 
         return await callDeepSeek(prompt, systemPrompt);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getGrammarExplanation(topicTitle, language);
-        }
         console.error("Error fetching grammar:", error);
-        return "Error connecting to AI service. Please check your API key.";
+        return "Désolé, une erreur est survenue lors de la connexion au service d'IA.";
     }
 };
 
@@ -163,9 +160,7 @@ Return ONLY a valid JSON object with this exact structure:
         const response = await callDeepSeek(prompt, systemPrompt, true);
         return parseJSON<VerbConjugation>(response);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getVerbConjugation(verb, language);
-        }
+        console.error("Error fetching conjugation:", error);
         throw error;
     }
 };
@@ -196,10 +191,7 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
         const response = await callDeepSeek(prompt, systemPrompt, true);
         return parseJSON<QuizQuestion[]>(response);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET' || error.message === 'DEEPSEEK_NETWORK_ERROR') {
-            console.log('DeepSeek unavailable, using Gemini fallback for Quiz');
-            return await geminiService.getQuiz(topicTitle, language);
-        }
+        console.error("Quiz generation failed:", error);
         return [];
     }
 };
@@ -220,9 +212,7 @@ Return ONLY a valid JSON array with structure: [{"front": "French phrase", "back
         const response = await callDeepSeek(promptText, undefined, true);
         return parseJSON<Flashcard[]>(response);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getFlashcards(category, language);
-        }
+        console.error("Flashcard generation failed:", error);
         return [];
     }
 };
@@ -254,9 +244,7 @@ Return a valid JSON array.`;
         const response = await callDeepSeek(promptText, undefined, true);
         return parseJSON<Phrase[]>(response);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getDailyPhrases(topic, tense, language);
-        }
+        console.error("Phrase generation failed:", error);
         return [];
     }
 };
@@ -293,10 +281,7 @@ export const getExamPrompts = async (): Promise<{
         const response = await callDeepSeek(prompt, undefined, true);
         return parseJSON<any>(response);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getExamPrompts();
-        }
-        // Fallback prompts
+        console.error("Exam prompt generation failed:", error);
         return {
             listening: "Écoutez ce dialogue entre deux amis qui parlent de leurs dernières vacances.",
             reading: "Lisez ce courriel d'un ami qui vous invite à visiter sa nouvelle maison à Bruxelles.",
@@ -327,9 +312,7 @@ export const getWritingFeedback = async (promptText: string, userText: string, l
 
         return await callDeepSeek(prompt);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET' || error.message === 'DEEPSEEK_NETWORK_ERROR') {
-            return await geminiService.getWritingFeedback(promptText, userText, language);
-        }
+        console.error("Writing feedback failed:", error);
         return "Impossible de générer le feedback pour le moment.";
     }
 };
@@ -341,7 +324,8 @@ export const getWritingExample = async (promptText: string): Promise<{ modelAnsw
         1. Un texte modèle ('modelAnswer') en français qui répond parfaitement à la consigne. 
            ${userContext}
            **RÈGLE CRUCIALE :** Le texte doit faire EXACTEMENT entre **8 et 10 phrases**.
-           Utilisez un vocabulaire simple (A2-B1) et les TEMPS VERBAUX les plus appropriés à la situation.
+           Utilisez un **VOCABULAIRE SIMPLE** (A2-B1) et des structures naturelles mais faciles. Évitez les tournures compliquées.
+           Utilisez les TEMPS VERBAUX les plus appropriés à la situation.
            Utilisez les informations du profil ci-dessus pour créer une réponse PERSONNALISÉE et RÉALISTE.
            Mettez en gras (**mot**) les verbes conjugués et les connecteurs logiques.
         2. Une brève analyse ('analysis') en français expliquant pourquoi le texte est un bon exemple pour le niveau B1. Formatez l'analyse en Markdown simple.`;
@@ -349,10 +333,8 @@ export const getWritingExample = async (promptText: string): Promise<{ modelAnsw
         const response = await callDeepSeek(prompt, undefined, true);
         return parseJSON<{ modelAnswer: string; analysis: string; }>(response);
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getWritingExample(promptText);
-        }
-        return { modelAnswer: "Could not generate a model response.", analysis: "" };
+        console.error("Writing example failed:", error);
+        return { modelAnswer: "Désolé, impossible de générer un exemple de réponse.", analysis: "" };
     }
 };
 
@@ -374,10 +356,8 @@ export const getSpeakingExample = async (promptText: string, language: Language)
         }
         return { text, audio };
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getSpeakingExample(promptText, language);
-        }
-        return { text: "Je ne sais pas quoi dire pour le moment.", audio: "" };
+        console.error("Speaking example failed:", error);
+        return { text: "Désolé, je ne sais pas quoi dire pour le moment.", audio: "" };
     }
 };
 
@@ -394,9 +374,7 @@ export const getListeningExample = async (promptText: string): Promise<{ text: s
         }
         return { text, audio };
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getListeningExample(promptText);
-        }
+        console.error("Listening example failed:", error);
         return { text: "Erreur de génération du dialogue.", audio: "" };
     }
 };
@@ -408,9 +386,7 @@ export const getReadingExample = async (promptText: string): Promise<{ text: str
         const text = await callDeepSeek(prompt);
         return { text };
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getReadingExample(promptText);
-        }
+        console.error("Reading example failed:", error);
         return { text: "Erreur de génération du texte." };
     }
 };
@@ -471,11 +447,8 @@ export const getComprehensiveExamData = async (language: Language) => {
 
         return examData;
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET') {
-            return await geminiService.getComprehensiveExamData(language);
-        }
-        console.error("Error generating comprehensive exam data", error);
-        throw new Error("Failed to generate the exam based on the syllabus.");
+        console.error("Comprehensive exam generation failed:", error);
+        throw new Error("Échec de la génération de l'examen.");
     }
 };
 
@@ -491,7 +464,7 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
 
     **Syllabus & Contraintes:**
     1.  **Thèmes:** Logement, quartier, enfance, projets futurs, fait divers.
-        - Pour "Logement/Quartier", le contexte DOIT être la ville de **Liège** (Belgique).
+        - Pour "Logement/Quartier", le contexte DOIT être la ville de **Liège** et plus précisément le quartier de la **Citadelle**.
         - Pour "Enfance/Souvenirs", le contexte DOIT être le **Liban**.
     2.  **Grammaire & Langue:**
         - Temps du passé: Passé Composé, Imparfait, Plus-que-parfait.
@@ -563,12 +536,8 @@ export const getExamenBlancGeneratorData = async (language: Language) => {
         }
         return examData;
     } catch (error: any) {
-        if (error.message === 'DEEPSEEK_API_KEY_NOT_SET' || error.message === 'DEEPSEEK_NETWORK_ERROR') {
-            console.log('DeepSeek unavailable, using Gemini fallback for Examen Blanc');
-            return await geminiService.getExamenBlancGeneratorData(language);
-        }
-        console.error("Error generating Examen Blanc Generator data", error);
-        throw new Error("Failed to generate exam.");
+        console.error("Examen Blanc generation failed:", error);
+        throw new Error("Échec de la génération de l'examen.");
     }
 };
 

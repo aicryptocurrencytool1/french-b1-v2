@@ -9,6 +9,7 @@ export const userProfile = {
     // Current Life in Belgium
     currentLocation: {
         city: "Liège",
+        neighborhood: "Citadelle",
         country: "Belgium",
         yearsLiving: 3,
     },
@@ -58,7 +59,7 @@ export const getUserContext = (): string => {
 **Profil de l'étudiant (à utiliser pour personnaliser les exemples) :**
 - **Nom :** ${userProfile.name}
 - **Âge :** ${userProfile.age} ans, célibataire
-- **Situation actuelle :** Vit à ${userProfile.currentLocation.city} (${userProfile.currentLocation.country}) depuis ${userProfile.currentLocation.yearsLiving} ans
+- **Situation actuelle :** Vit à ${userProfile.currentLocation.city}, dans le quartier de la **${userProfile.currentLocation.neighborhood}** (${userProfile.currentLocation.country}) depuis ${userProfile.currentLocation.yearsLiving} ans.
 - **Famille :** ${userProfile.family.friend}, ${userProfile.family.sister}
 - **Profession :** ${userProfile.career.profession}, ${userProfile.career.currentStatus}
 - **Objectif professionnel :** Trouver un emploi dans une ${userProfile.career.goalSector}
@@ -70,6 +71,11 @@ export const getUserContext = (): string => {
 **Instructions grammaticales prioritaires :**
 Utilisez les temps suivants : ${userProfile.grammarEmphasis.join(', ')}. 
 Incorporez des phrases avec "Si seulement..." pour exprimer des regrets.
+
+**COMPORTEMENT DE L'IA :**
+- Utilisez les informations sur l'**enfance** UNIQUEMENT pour les sujets portant sur le passé lointain ou le Liban.
+- Utilisez les informations sur le **logement et le quartier** UNIQUEMENT pour les sujets sur la vie actuelle en Belgique.
+- Adaptez le vocabulaire pour qu'il soit simple et naturel (niveau A2-B1). Évitez les phrases trop complexes ou littéraires.
 
 **CONTRAINTES DE LONGUEUR :**
 Tous les textes modèles (modelAnswer, text) doivent être CONCIS : faites exactement **8 à 10 phrases**. Pas plus, pas moins.
