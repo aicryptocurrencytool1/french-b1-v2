@@ -1,70 +1,78 @@
-// Vercel Serverless Function to proxy DeepSeek API calls
-// Optimized for stability and timeout handling
+// Vercel Edge Function for DeepSeek Proxy
+// Edge Runtime allows up to 30s execution time, solving the "terminated" (10s limit) issue.
 
-export default async function handler(req, res) {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+export const config = {
+    runtime: 'edge',
+};
+
+export default async function handler(req) {
+    // Standard CORS headers for Edge
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
 
     if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+        return new Response(null, { status: 200, headers });
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
+        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+            status: 405,
+            headers: { ...headers, 'Content-Type': 'application/json' }
+        });
     }
 
     const apiKey = process.env.DEEPSEEK_API_KEY || process.env.VITE_DEEPSEEK_API_KEY;
 
     if (!apiKey) {
         console.error('DEEPSEEK_API_KEY is missing');
-        return res.status(500).json({ error: 'DeepSeek API key not configured on server' });
+        return new Response(JSON.stringify({ error: 'DeepSeek API key not configured on Vercel' }), {
+            status: 500,
+            headers: { ...headers, 'Content-Type': 'application/json' }
+        });
     }
 
-    // Set a timeout for the fetch
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 9000); // 9 seconds timeout for Hobby plan (10s limit)
-
     try {
-        // Handle body correctly
-        const bodyContent = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+        const bodyContent = await req.json();
 
-        console.log('Forwarding request to DeepSeek...');
+        // Edge functions have a 25-30s timeout limit, much better than Serverless 10s
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 28000); // 28 seconds
+
+        console.log('Forwarding request to DeepSeek (Edge Runtime)...');
         const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${apiKey}`,
             },
-            body: bodyContent,
+            body: JSON.stringify(bodyContent),
             signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error('DeepSeek Error Response:', response.status, data);
-            return res.status(response.status).json(data);
-        }
-
-        return res.status(200).json(data);
+        // We can return the body as a stream for maximum efficiency
+        return new Response(response.body, {
+            status: response.status,
+            headers: {
+                ...headers,
+                'Content-Type': 'application/json',
+            },
+        });
     } catch (error) {
-        clearTimeout(timeoutId);
-        console.error('Proxy Exception:', error.name, error.message);
+        console.error('Edge Proxy Exception:', error.name, error.message);
 
-        if (error.name === 'AbortError') {
-            return res.status(504).json({
-                error: 'DeepSeek Gateway Timeout',
-                message: 'DeepSeek API took too long to respond (9s+). Falling back to Gemini.'
-            });
-        }
+        const isTimeout = error.name === 'AbortError' || error.message.includes('terminated');
 
-        return res.status(500).json({
-            error: 'Failed to communicate with DeepSeek',
+        return new Response(JSON.stringify({
+            error: isTimeout ? 'DeepSeek Timeout' : 'Failed to communicate with DeepSeek',
             message: error.message
+        }), {
+            status: isTimeout ? 504 : 500,
+            headers: { ...headers, 'Content-Type': 'application/json' }
         });
     }
 }
