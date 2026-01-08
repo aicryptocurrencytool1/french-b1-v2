@@ -11,43 +11,82 @@ interface GrammarProps {
 }
 
 const renderInlineFormatting = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-            return <strong key={i} className="font-semibold text-blue-600 bg-blue-100 px-1 rounded">{part.slice(2, -2)}</strong>;
-        }
-        return part;
-    });
+  // Split by bold patterns (**...**)
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      // Highlight bold content (usually French words) with a blue background pill
+      const content = part.slice(2, -2);
+      return (
+        <strong key={i} className="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-100 mx-0.5">
+          {content}
+        </strong>
+      );
+    }
+    return part;
+  });
 };
 
 const FormattedContent: React.FC<{ text: string }> = ({ text }) => {
-    const blocks = text.split(/\n\s*\n/);
+  // Split by newlines but handle potential whitespace
+  const lines = text.split(/\n/);
+  const content: React.ReactNode[] = [];
+  let currentList: string[] = [];
 
-    return (
-        <div className="prose max-w-none">
-            {blocks.map((block, index) => {
-                block = block.trim();
-                if (!block) return null;
+  const flushList = (key: string | number) => {
+    if (currentList.length > 0) {
+      content.push(
+        <ul key={`list-${key}`} className="list-disc list-outside space-y-2 my-4 ps-6">
+          {currentList.map((li, i) => (
+            <li key={i} className="text-slate-600 ps-2 leading-relaxed">{renderInlineFormatting(li)}</li>
+          ))}
+        </ul>
+      );
+      currentList = [];
+    }
+  };
 
-                if (block.startsWith('## ')) {
-                    return <h2 key={index} className="text-2xl font-bold text-slate-800 mt-8 mb-4 border-b pb-2 border-slate-200 font-heading">{block.substring(3)}</h2>;
-                }
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) {
+      flushList(index);
+      return;
+    }
 
-                if (block.startsWith('* ')) {
-                    const items = block.split('\n').map(item => item.replace(/^\*\s*/, '').trim());
-                    return (
-                        <ul key={index} className="list-disc list-outside space-y-2 my-4 ps-6">
-                            {items.map((li, i) => (
-                                <li key={i} className="text-slate-600 ps-2 leading-relaxed">{renderInlineFormatting(li)}</li>
-                            ))}
-                        </ul>
-                    );
-                }
-                
-                return <p key={index} className="text-slate-700 leading-relaxed mb-4">{renderInlineFormatting(block)}</p>;
-            })}
-        </div>
-    );
+    // Headers
+    if (trimmedLine.startsWith('### ')) {
+      flushList(index);
+      content.push(<h3 key={index} className="text-xl font-bold text-slate-800 mt-6 mb-3 font-heading">{trimmedLine.substring(4)}</h3>);
+    } else if (trimmedLine.startsWith('## ')) {
+      flushList(index);
+      content.push(<h2 key={index} className="text-2xl font-bold text-slate-800 mt-8 mb-4 border-b pb-2 border-slate-200 font-heading">{trimmedLine.substring(3)}</h2>);
+    } else if (trimmedLine.startsWith('# ')) {
+      flushList(index);
+      content.push(<h1 key={index} className="text-3xl font-bold text-slate-900 mt-10 mb-6 font-heading">{trimmedLine.substring(2)}</h1>);
+    }
+    // List items
+    else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+      currentList.push(trimmedLine.substring(2));
+    }
+    // Bold headers (sometimes AI uses **Title**)
+    else if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**') && trimmedLine.length < 50) {
+      flushList(index);
+      content.push(<p key={index} className="text-lg font-bold text-slate-800 mt-6 mb-2">{trimmedLine.slice(2, -2)}</p>);
+    }
+    // Regular paragraph
+    else {
+      flushList(index);
+      content.push(<p key={index} className="text-slate-700 leading-relaxed mb-4">{renderInlineFormatting(trimmedLine)}</p>);
+    }
+  });
+
+  flushList('final');
+
+  return (
+    <div className="prose max-w-none pb-8 text-neutral-900">
+      {content}
+    </div>
+  );
 };
 
 const Grammar: React.FC<GrammarProps> = ({ language }) => {
@@ -58,7 +97,7 @@ const Grammar: React.FC<GrammarProps> = ({ language }) => {
 
   useEffect(() => {
     if (selectedTopic) {
-        handleTopicSelect(selectedTopic);
+      handleTopicSelect(selectedTopic);
     }
   }, [language]);
 
@@ -68,13 +107,13 @@ const Grammar: React.FC<GrammarProps> = ({ language }) => {
     setExplanation("");
 
     if (topic.id === 'tenses_comparison') {
-        const localizedExplanation = tensesComparisonExplanation[language] || tensesComparisonExplanation['English'];
-        setExplanation(localizedExplanation || "Explanation not available for this language.");
-        setLoading(false);
+      const localizedExplanation = tensesComparisonExplanation[language] || tensesComparisonExplanation['English'];
+      setExplanation(localizedExplanation || "Explanation not available for this language.");
+      setLoading(false);
     } else {
-        const text = await getGrammarExplanation(topic.title, language);
-        setExplanation(text);
-        setLoading(false);
+      const text = await getGrammarExplanation(topic.title, language);
+      setExplanation(text);
+      setLoading(false);
     }
   };
 
@@ -120,7 +159,7 @@ const Grammar: React.FC<GrammarProps> = ({ language }) => {
               <h2 className="text-2xl md:text-3xl font-bold text-slate-900 font-heading">{selectedTopic.title}</h2>
               <p className="text-slate-500 mt-2">{selectedTopic.description}</p>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
               {loading ? (
                 <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-4">

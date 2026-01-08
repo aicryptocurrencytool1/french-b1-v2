@@ -90,43 +90,69 @@ const ModelAnswerGenerator: React.FC<{ prompt: string; type: 'writing' | 'speaki
 };
 
 const renderInlineFormatting = (text: string) => {
+    // Split by bold patterns (**...**)
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
-            const content = part.slice(2, -2).replace(/\*\*/g, '');
-            return <strong key={i} className="font-semibold text-blue-600 bg-blue-100 px-1 rounded">{content}</strong>;
+        if (part.startsWith('**') && part.endsWith('**')) {
+            // Highlight bold content (usually French words) with a blue background pill
+            const content = part.slice(2, -2);
+            return (
+                <strong key={i} className="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-100 mx-0.5">
+                    {content}
+                </strong>
+            );
         }
-        return part.replace(/\*\*/g, '');
+        return part;
     });
 };
 
 const FormattedContent: React.FC<{ text: string }> = ({ text }) => {
-    const blocks = text.split(/\n\s*\n/);
-    return (
-        <div className="prose prose-sm max-w-none text-left">
-            {blocks.map((block, index) => {
-                block = block.trim();
-                if (!block) return null;
-                if (block.startsWith('## ')) {
-                    return <h2 key={index} className="text-xl font-bold text-slate-800 mt-6 mb-3 border-b pb-1 border-slate-200">{block.substring(3)}</h2>;
-                }
-                if (block.startsWith('### ')) {
-                    return <h3 key={index} className="text-lg font-bold text-slate-800 mt-4 mb-2">{block.substring(4)}</h3>;
-                }
-                if (block.startsWith('* ')) {
-                    const items = block.split('\n').map(item => item.replace(/^\*\s*/, '').trim());
-                    return (
-                        <ul key={index} className="list-disc list-outside space-y-2 my-3 ps-5 text-slate-700">
-                            {items.map((li, i) => (
-                                <li key={i} className="ps-1">{renderInlineFormatting(li)}</li>
-                            ))}
-                        </ul>
-                    );
-                }
-                return <p key={index} className="text-slate-700 leading-relaxed mb-3">{renderInlineFormatting(block)}</p>;
-            })}
-        </div>
-    );
+    const lines = text.split(/\n/);
+    const content: React.ReactNode[] = [];
+    let currentList: string[] = [];
+
+    const flushList = (key: string | number) => {
+        if (currentList.length > 0) {
+            content.push(
+                <ul key={`list-${key}`} className="list-disc list-outside space-y-2 my-4 ps-6">
+                    {currentList.map((li, i) => (
+                        <li key={i} className="text-slate-600 ps-2 leading-relaxed">{renderInlineFormatting(li)}</li>
+                    ))}
+                </ul>
+            );
+            currentList = [];
+        }
+    };
+
+    lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) {
+            flushList(index);
+            return;
+        }
+
+        if (trimmedLine.startsWith('### ')) {
+            flushList(index);
+            content.push(<h3 key={index} className="text-xl font-bold text-slate-800 mt-6 mb-3 font-heading">{trimmedLine.substring(4)}</h3>);
+        } else if (trimmedLine.startsWith('## ')) {
+            flushList(index);
+            content.push(<h2 key={index} className="text-2xl font-bold text-slate-800 mt-8 mb-4 border-b pb-2 border-slate-200 font-heading">{trimmedLine.substring(3)}</h2>);
+        } else if (trimmedLine.startsWith('# ')) {
+            flushList(index);
+            content.push(<h1 key={index} className="text-3xl font-bold text-slate-900 mt-10 mb-6 font-heading">{trimmedLine.substring(2)}</h1>);
+        } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+            currentList.push(trimmedLine.substring(2));
+        } else if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**') && trimmedLine.length < 50) {
+            flushList(index);
+            content.push(<p key={index} className="text-lg font-bold text-slate-800 mt-6 mb-2">{trimmedLine.slice(2, -2)}</p>);
+        } else {
+            flushList(index);
+            content.push(<p key={index} className="text-slate-700 leading-relaxed mb-4">{renderInlineFormatting(trimmedLine)}</p>);
+        }
+    });
+
+    flushList('final');
+    return <div className="prose prose-sm max-w-none pb-4 text-neutral-900 text-left">{content}</div>;
 };
 
 const WritingCorrection: React.FC<{ prompt: string; userText: string; language: Language; t: any }> = ({ prompt, userText, language, t }) => {
