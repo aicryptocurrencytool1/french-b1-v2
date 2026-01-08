@@ -98,8 +98,8 @@ const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: b
     throw new Error('DEEPSEEK_FAILED_AFTER_RETRIES');
 };
 
-// Parse JSON from response
-const parseJSON = <T>(text: string): T => {
+// Parse JSON from response with robust error handling
+const parseJSON = <T>(text: string, context: string = "unknown"): T => {
     let cleanedText = text.trim();
 
     // 1. Try to extract from markdown block
@@ -118,10 +118,14 @@ const parseJSON = <T>(text: string): T => {
 
     try {
         cleanedText = cleanedText.trim();
-        return JSON.parse(cleanedText) as T;
+        const parsed = JSON.parse(cleanedText);
+        console.log(`[${context}] JSON parsing successful`);
+        return parsed as T;
     } catch (e) {
-        console.error("JSON Parse Error. Cleaned text:", cleanedText);
-        throw e;
+        console.error(`[${context}] JSON Parse Error. Raw text length: ${text.length}`);
+        console.error(`[${context}] Cleaned text (first 500 chars):`, cleanedText.substring(0, 500));
+        console.error(`[${context}] Parse error:`, e);
+        throw new Error(`JSON parsing failed for ${context}: ${e instanceof Error ? e.message : "Unknown error"}`);
     }
 };
 
@@ -228,20 +232,33 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
         }`;
 
         const response = await callDeepSeek(promptText, undefined, true);
-        const parsed = parseJSON<{ questions: QuizQuestion[] }>(response);
+        const parsed = parseJSON<{ questions: QuizQuestion[] }>(response, "Quiz Generation");
+
+        if (!parsed.questions || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+            throw new Error("Quiz response is missing 'questions' array or it's empty");
+        }
 
         // Final sanity check: ensure correctAnswerIndex is a number
-        const questions = (parsed.questions || []).map(q => ({
+        const questions = parsed.questions.map(q => ({
             ...q,
             correctAnswerIndex: Number(q.correctAnswerIndex)
         }));
 
+        console.log(`[Quiz] Successfully generated ${questions.length} questions for topic: ${topicTitle}`);
         return questions;
     } catch (error: any) {
-        console.warn("DeepSeek quiz generation failed, falling back to Gemini:", error);
-        const geminiQuiz = await geminiService.getQuiz(topicTitle, language);
-        if (!geminiQuiz || geminiQuiz.length === 0) throw new Error("Both DeepSeek and Gemini failed to generate the quiz.");
-        return geminiQuiz;
+        console.warn("DeepSeek quiz generation failed, falling back to Gemini:", error.message);
+        try {
+            const geminiQuiz = await geminiService.getQuiz(topicTitle, language);
+            if (!geminiQuiz || geminiQuiz.length === 0) {
+                throw new Error("Gemini also returned empty quiz data");
+            }
+            console.log(`[Quiz] Gemini fallback successful with ${geminiQuiz.length} questions`);
+            return geminiQuiz;
+        } catch (geminiError: any) {
+            console.error("Both DeepSeek and Gemini failed for quiz generation:", geminiError);
+            throw new Error(`Quiz generation failed: ${error.message}. Gemini fallback also failed: ${geminiError.message}`);
+        }
     }
 };
 
@@ -555,18 +572,31 @@ export const getExamenBlancGeneratorData = async (language: Language): Promise<a
     `;
 
         const response = await callDeepSeek(promptText, "Expert French Coach", true);
-        const examData = parseJSON<any>(response);
+        const examData = parseJSON<any>(response, "Examen Blanc Generation");
+
+        // Validate critical structure
+        if (!examData.listening || !examData.reading || !examData.grammar) {
+            throw new Error("Examen Blanc response is missing critical sections (listening, reading, or grammar)");
+        }
 
         // Audio is now generated ON-DEMAND in the UI to save quota and prevent timeouts
         if (examData?.listening) {
             examData.listening.audio = null;
         }
+        console.log("[Examen Blanc] Generation successful with all sections present");
         return examData;
     } catch (error: any) {
-        console.warn("DeepSeek Examen Blanc generation failed, falling back to Gemini:", error);
-        const geminiData = await geminiService.getExamenBlancGeneratorData(language);
-        if (!geminiData) throw new Error("Both DeepSeek and Gemini failed to generate exam data.");
-        return geminiData;
+        console.warn("DeepSeek Examen Blanc generation failed, falling back to Gemini:", error.message);
+        try {
+            const geminiExam = await geminiService.getExamenBlancGeneratorData(language);
+            if (!geminiExam || !geminiExam.listening || !geminiExam.reading) {
+                throw new Error("Gemini also returned incomplete exam data");
+            }
+            console.log("[Examen Blanc] Gemini fallback successful");
+            return geminiExam;
+        } catch (geminiError: any) {
+            console.error("Both DeepSeek and Gemini failed for Examen Blanc:", geminiError);
+            throw new Error(`Examen Blanc generation failed: ${error.message}. Gemini fallback also failed: ${geminiError.message}`);
+        }
     }
 };
-

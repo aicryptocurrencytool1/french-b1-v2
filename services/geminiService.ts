@@ -8,9 +8,9 @@ const GEMINI_API_KEY = (typeof process !== 'undefined' && process.env.GEMINI_API
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 const modelName = 'gemini-1.5-flash'; // Standardized model name
 
-const parseGeminiJson = <T>(text: string | undefined): T => {
+const parseGeminiJson = <T>(text: string | undefined, context: string = "unknown"): T => {
     if (!text) {
-        throw new Error("No text returned from API");
+        throw new Error(`No text returned from Gemini API for ${context}`);
     }
     let cleanedText = text.trim();
 
@@ -30,10 +30,13 @@ const parseGeminiJson = <T>(text: string | undefined): T => {
 
     try {
         cleanedText = cleanedText.trim();
-        return JSON.parse(cleanedText) as T;
+        const parsed = JSON.parse(cleanedText);
+        console.log(`[Gemini ${context}] JSON parsing successful`);
+        return parsed as T;
     } catch (e) {
-        console.error("Gemini JSON Parse Error. Cleaned text:", cleanedText);
-        throw e;
+        console.error(`[Gemini ${context}] JSON Parse Error. Raw text length: ${text.length}`);
+        console.error(`[Gemini ${context}] Cleaned text (first 500 chars):`, cleanedText.substring(0, 500));
+        throw new Error(`Gemini JSON parsing failed for ${context}: ${e instanceof Error ? e.message : "Unknown error"}`);
     }
 };
 
@@ -182,7 +185,7 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
     });
     const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) throw new Error("No text from Gemini");
-    const parsed = parseGeminiJson<{ questions: QuizQuestion[] }>(text);
+    const parsed = parseGeminiJson<{ questions: QuizQuestion[] }>(text, "Quiz Generation");
     return parsed?.questions || [];
 };
 
@@ -346,7 +349,7 @@ export const getExamenBlancGeneratorData = async (language: Language): Promise<a
         }],
         config: { responseMimeType: "application/json" }
     });
-    const data = parseGeminiJson<any>(response.candidates?.[0]?.content?.parts?.[0]?.text);
+    const data = parseGeminiJson<any>(response.candidates?.[0]?.content?.parts?.[0]?.text, "Examen Blanc Generator");
     if (data.listening) {
         data.listening.audio = null; // On-demand only
     }
