@@ -29,44 +29,37 @@ interface DeepSeekRequest {
     response_format?: { type: 'json_object' };
 }
 
-// Helper to call DeepSeek API
+// Helper to call DeepSeek API with retry
 const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: boolean = false): Promise<string> => {
-    const apiKey = getDeepSeekApiKey();
+    const maxRetries = 2;
+    let attempt = 0;
 
-    // If no DeepSeek API key AND we are local, fallback to Gemini
-    // In production, we assume the server has the key
-    if (!apiKey && window.location.hostname === 'localhost') {
-        console.warn('DEEPSEEK_API_KEY not set locally, falling back to Gemini API');
-        throw new Error('DEEPSEEK_API_KEY_NOT_SET');
-    }
+    const executeCall = async (): Promise<string> => {
+        const apiKey = getDeepSeekApiKey();
+        const isLocal = window.location.hostname === 'localhost';
 
-    const messages: DeepSeekMessage[] = [];
-    if (systemPrompt) {
-        messages.push({ role: 'system', content: systemPrompt });
-    }
-    messages.push({ role: 'user', content: prompt });
+        if (!apiKey && isLocal) {
+            console.warn('DEEPSEEK_API_KEY not set locally, falling back to Gemini API');
+            throw new Error('DEEPSEEK_API_KEY_NOT_SET');
+        }
 
-    const requestBody: DeepSeekRequest = {
-        model: DEEPSEEK_MODEL,
-        messages,
-        temperature: 0.7,
-        max_tokens: 4000,
-    };
+        const messages: DeepSeekMessage[] = [];
+        if (systemPrompt) {
+            messages.push({ role: 'system', content: systemPrompt });
+        }
+        messages.push({ role: 'user', content: prompt });
 
-    if (expectJSON) {
-        requestBody.response_format = { type: 'json_object' };
-    }
-
-    const isLocal = window.location.hostname === 'localhost';
-    const apiUrl = isLocal ? DEEPSEEK_API_URL : '/api/deepseek';
-
-    try {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
+        const requestBody: DeepSeekRequest = {
+            model: DEEPSEEK_MODEL,
+            messages,
+            temperature: 0.7,
+            max_tokens: 4000,
+            ...(expectJSON ? { response_format: { type: 'json_object' } } : {}),
         };
 
-        // Only add Authorization header if calling direct URL (local dev)
-        // Production proxy /api/deepseek adds the key securely on the server
+        const apiUrl = isLocal ? DEEPSEEK_API_URL : '/api/deepseek';
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
         if (isLocal && apiKey) {
             headers['Authorization'] = `Bearer ${apiKey}`;
         }
@@ -84,14 +77,25 @@ const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: b
 
         const data = await response.json();
         return data.choices[0].message.content || '';
-    } catch (error: any) {
-        console.error('DeepSeek call failed:', error);
-        // If fetch fails or API errors, mark for fallback
-        if (error.name === 'TypeError' || error.message.includes('fetch') || error.message.includes('DEEPSEEK_API_ERROR')) {
-            throw new Error('DEEPSEEK_NETWORK_ERROR');
+    };
+
+    while (attempt < maxRetries) {
+        try {
+            return await executeCall();
+        } catch (error: any) {
+            attempt++;
+            console.warn(`DeepSeek attempt ${attempt} failed:`, error.message);
+            if (attempt >= maxRetries) {
+                if (error.name === 'TypeError' || error.message.includes('fetch') || error.message.includes('DEEPSEEK_API_ERROR')) {
+                    throw new Error('DEEPSEEK_NETWORK_ERROR');
+                }
+                throw error;
+            }
+            // Wait a bit before retry
+            await new Promise(resolve => setTimeout(resolve, 500 * attempt));
         }
-        throw error;
     }
+    throw new Error('DEEPSEEK_FAILED_AFTER_RETRIES');
 };
 
 // Parse JSON from response
