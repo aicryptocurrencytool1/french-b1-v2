@@ -121,8 +121,11 @@ export const getSpeech = async (text: string): Promise<string> => {
             return base64Audio;
         }
         throw new Error("No audio data returned");
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching speech:", error);
+        if (error.message?.includes('429') || error.status === 429) {
+            throw new Error("RATE_LIMIT: Gemini is resting. Please try again in 1 minute.");
+        }
         throw error;
     }
 };
@@ -137,6 +140,12 @@ export const getGrammarExplanation = async (topicTitle: string, language: Langua
                 text: `Explain French B1 grammar: "${topicTitle}" for Ahmad in ${language}.
         ${context}
         STYLE (DEEP DIVE & SIMPLE): Persona: Friendly funny coach. Detailed tone. Clear metaphor.
+        **SPECIFIC RULE FOR TENSES:** If comparing the past tenses (Passé Composé, Imparfait, PQP, Conditionnel), you MUST use this "Party Story" metaphor:
+        - **Passé Composé:** The Action Movie Star (What happened! BAM!).
+        - **Imparfait:** The Scenery Painter (Setting the scene, background).
+        - **Plus-que-parfait:** The Flashback Director (The "past of the past").
+        - **Conditionnel:** The "What If" Dreamer (Hypotheticals).
+        Use the story of a party to illustrate all 4 jobs.
         Structure: 
         ## 1. Son Job (Its Job) -> LONG detailed explanation (2-3 paragraphs).
         ## 2. The Metaphor
@@ -338,8 +347,8 @@ export const getExamenBlancGeneratorData = async (language: Language): Promise<a
         config: { responseMimeType: "application/json" }
     });
     const data = parseGeminiJson<any>(response.candidates?.[0]?.content?.parts?.[0]?.text);
-    if (data.listening?.text) {
-        data.listening.audio = await getSpeech(data.listening.text);
+    if (data.listening) {
+        data.listening.audio = null; // On-demand only
     }
     return data;
 };

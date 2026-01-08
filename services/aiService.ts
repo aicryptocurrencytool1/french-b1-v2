@@ -146,6 +146,12 @@ ${userContext}
 - Sections:
   1. **Son Job (Its Job):** Provide a **LONG**, detailed explanation (2-3 paragraphs) on why this exists and when to use it.
   2. **The Metaphor:** A funny or relatable way to remember it.
+     **SPECIFIC RULE FOR TENSES:** If comparing the past tenses (Passé Composé, Imparfait, PQP, Conditionnel), you MUST use this "Party Story" metaphor:
+     - **Passé Composé:** The Action Movie Star (What happened! BAM!).
+     - **Imparfait:** The Scenery Painter (Setting the scene, background).
+     - **Plus-que-parfait:** The Flashback Director (The "past of the past").
+     - **Conditionnel:** The "What If" Dreamer (Hypotheticals).
+     Use the story of a party to illustrate all 4 jobs.
   3. **Dans ma vraie vie (In my real life):** Provide **at least 4 detailed examples**. 
      **CRITICAL RULE:** All examples MUST use the first person **"je"** (I). Ahmad must be the protagonist.
      Use Ahmad's life in **Liège** or memories of **Libanon**.
@@ -551,13 +557,9 @@ export const getExamenBlancGeneratorData = async (language: Language): Promise<a
         const response = await callDeepSeek(promptText, "Expert French Coach", true);
         const examData = parseJSON<any>(response);
 
-        if (examData?.listening?.text) {
-            try {
-                examData.listening.audio = await getSpeech(examData.listening.text);
-            } catch (error) {
-                console.error("Audio generation failed for Examen Blanc, proceeding without audio:", error);
-                examData.listening.audio = null;
-            }
+        // Audio is now generated ON-DEMAND in the UI to save quota and prevent timeouts
+        if (examData?.listening) {
+            examData.listening.audio = null;
         }
         return examData;
     } catch (error: any) {

@@ -288,28 +288,38 @@ const ExamenBlancGenerator: React.FC<ExamenBlancGeneratorProps> = ({ language })
                         </div>
                         {examData.listening?.text && (
                             <div className="flex gap-4 items-center mt-4">
-                                <button
-                                    onClick={async () => {
-                                        if (!examData.listening.audio) {
-                                            setAudioLoading(true);
-                                            try {
-                                                const audio = await getSpeech(examData.listening.text);
-                                                setExamData({ ...examData, listening: { ...examData.listening, audio } });
-                                                await playAudio(audio);
-                                            } catch (e) {
-                                                console.error('Audio generation failed:', e);
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            if (audioLoading) return;
+                                            setError(null);
+                                            if (!examData.listening.audio) {
+                                                setAudioLoading(true);
+                                                try {
+                                                    const audio = await getSpeech(examData.listening.text);
+                                                    setExamData({ ...examData, listening: { ...examData.listening, audio } });
+                                                    await playAudio(audio);
+                                                } catch (e: any) {
+                                                    console.error('Audio generation failed:', e);
+                                                    setError(e.message || "Failed to generate audio.");
+                                                }
+                                                setAudioLoading(false);
+                                            } else {
+                                                playAudio(examData.listening.audio);
                                             }
-                                            setAudioLoading(false);
-                                        } else {
-                                            playAudio(examData.listening.audio);
-                                        }
-                                    }}
-                                    disabled={audioLoading}
-                                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50"
-                                >
-                                    {audioLoading ? <Loader2 className="animate-spin" size={20} /> : <PlayCircle size={20} />}
-                                    {audioLoading ? 'Générant l\'audio...' : 'Écouter le Dialogue'}
-                                </button>
+                                        }}
+                                        disabled={audioLoading}
+                                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 w-fit"
+                                    >
+                                        {audioLoading ? <Loader2 className="animate-spin" size={20} /> : <PlayCircle size={20} />}
+                                        {audioLoading ? 'Générant l\'audio...' : 'Écouter le Dialogue'}
+                                    </button>
+                                    {error && error.includes('RATE_LIMIT') && (
+                                        <div className="text-xs text-red-500 bg-red-50 p-2 rounded border border-red-100 animate-in fade-in max-w-sm">
+                                            ⚠️ Gemini est fatigué (limite de quota). Veuillez attendre une minute avant de réessayer.
+                                        </div>
+                                    )}
+                                </div>
                                 <details className="text-xs text-slate-500 cursor-pointer">
                                     <summary>Voir la transcription</summary>
                                     <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-200 whitespace-pre-wrap">

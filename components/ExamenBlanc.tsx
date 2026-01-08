@@ -12,44 +12,50 @@ const AudioPlayer: React.FC<{ text: string }> = ({ text }) => {
     const [audioBase64, setAudioBase64] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchAudio = async () => {
+    const handlePlay = async () => {
+        if (isPlaying || loading) return;
+
+        setError(null);
+        if (!audioBase64) {
             setLoading(true);
             try {
                 const audio = await getSpeech(text);
                 setAudioBase64(audio);
-            } catch (e) {
-                console.error("Failed to load audio", e);
+                await playAudio(audio);
+            } catch (e: any) {
+                console.error("Failed to load/play audio", e);
+                setError(e.message || "Failed to load audio");
             }
             setLoading(false);
-        };
-        fetchAudio();
-    }, [text]);
-
-    const handlePlay = async () => {
-        if (!audioBase64 || isPlaying) return;
-        setIsPlaying(true);
-        try {
-            await playAudio(audioBase64);
-        } catch (e) {
-            console.error(e);
+        } else {
+            setIsPlaying(true);
+            try {
+                await playAudio(audioBase64);
+            } catch (e) {
+                console.error(e);
+            }
+            setIsPlaying(false);
         }
-        setIsPlaying(false);
     };
 
-    if (loading) return <div className="flex items-center gap-2 text-slate-500"><Loader2 className="animate-spin" size={16} /> Loading audio...</div>;
-    if (!audioBase64) return <div className="text-red-500">Audio unavailable</div>;
-
     return (
-        <button
-            onClick={handlePlay}
-            disabled={isPlaying}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-semibold"
-        >
-            {isPlaying ? <Loader2 className="animate-spin" size={20} /> : <PlayCircle size={20} />}
-            Listen to Dialogue
-        </button>
+        <div className="flex flex-col gap-2">
+            <button
+                onClick={handlePlay}
+                disabled={loading || isPlaying}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 transition-colors font-semibold shadow-sm w-fit"
+            >
+                {loading || isPlaying ? <Loader2 className="animate-spin" size={20} /> : <PlayCircle size={20} />}
+                {loading ? 'Génération...' : isPlaying ? 'Lecture...' : 'Écouter le Dialogue'}
+            </button>
+            {error && (
+                <div className="text-xs text-red-500 bg-red-50 p-2 rounded border border-red-100 animate-in fade-in max-w-sm">
+                    ⚠️ {error.includes('RATE_LIMIT') ? "Gemini est fatigué (limite de quota). Veuillez attendre une minute." : "Erreur audio."}
+                </div>
+            )}
+        </div>
     );
 };
 
