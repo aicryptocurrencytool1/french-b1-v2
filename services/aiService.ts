@@ -86,8 +86,8 @@ const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: b
         return data.choices[0].message.content || '';
     } catch (error: any) {
         console.error('DeepSeek call failed:', error);
-        // If fetch fails (CORS locally or network error), identify it for fallback
-        if (error.name === 'TypeError' || error.message.includes('fetch')) {
+        // If fetch fails or API errors, mark for fallback
+        if (error.name === 'TypeError' || error.message.includes('fetch') || error.message.includes('DEEPSEEK_API_ERROR')) {
             throw new Error('DEEPSEEK_NETWORK_ERROR');
         }
         throw error;
