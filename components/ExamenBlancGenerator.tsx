@@ -89,6 +89,46 @@ const ModelAnswerGenerator: React.FC<{ prompt: string; type: 'writing' | 'speaki
     );
 };
 
+const renderInlineFormatting = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+            const content = part.slice(2, -2).replace(/\*\*/g, '');
+            return <strong key={i} className="font-semibold text-blue-600 bg-blue-100 px-1 rounded">{content}</strong>;
+        }
+        return part.replace(/\*\*/g, '');
+    });
+};
+
+const FormattedContent: React.FC<{ text: string }> = ({ text }) => {
+    const blocks = text.split(/\n\s*\n/);
+    return (
+        <div className="prose prose-sm max-w-none text-left">
+            {blocks.map((block, index) => {
+                block = block.trim();
+                if (!block) return null;
+                if (block.startsWith('## ')) {
+                    return <h2 key={index} className="text-xl font-bold text-slate-800 mt-6 mb-3 border-b pb-1 border-slate-200">{block.substring(3)}</h2>;
+                }
+                if (block.startsWith('### ')) {
+                    return <h3 key={index} className="text-lg font-bold text-slate-800 mt-4 mb-2">{block.substring(4)}</h3>;
+                }
+                if (block.startsWith('* ')) {
+                    const items = block.split('\n').map(item => item.replace(/^\*\s*/, '').trim());
+                    return (
+                        <ul key={index} className="list-disc list-outside space-y-2 my-3 ps-5 text-slate-700">
+                            {items.map((li, i) => (
+                                <li key={i} className="ps-1">{renderInlineFormatting(li)}</li>
+                            ))}
+                        </ul>
+                    );
+                }
+                return <p key={index} className="text-slate-700 leading-relaxed mb-3">{renderInlineFormatting(block)}</p>;
+            })}
+        </div>
+    );
+};
+
 const WritingCorrection: React.FC<{ prompt: string; userText: string; language: Language; t: any }> = ({ prompt, userText, language, t }) => {
     const [loading, setLoading] = useState(false);
     const [feedback, setFeedback] = useState<string | null>(null);
@@ -129,12 +169,8 @@ const WritingCorrection: React.FC<{ prompt: string; userText: string; language: 
                     <div className="bg-white/50 p-4 rounded-lg border border-green-100 italic mb-4">
                         "{userText}"
                     </div>
-                    <div className="bg-white p-4 rounded-lg border border-green-100 shadow-sm">
-                        {feedback.split('\n').map((line, i) => (
-                            <p key={i} className={line.startsWith('##') ? 'font-bold text-lg mt-4 mb-2 text-green-800' : 'mb-2'}>
-                                {line.replace(/##\s*/, '').replace(/\*\*/g, '')}
-                            </p>
-                        ))}
+                    <div className="bg-white p-5 rounded-lg border border-green-100 shadow-sm">
+                        <FormattedContent text={feedback} />
                     </div>
                 </div>
                 <button

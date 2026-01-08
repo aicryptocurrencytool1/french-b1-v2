@@ -33,9 +33,10 @@ interface DeepSeekRequest {
 const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: boolean = false): Promise<string> => {
     const apiKey = getDeepSeekApiKey();
 
-    // If no DeepSeek API key, fallback to Gemini
-    if (!apiKey) {
-        console.warn('DEEPSEEK_API_KEY not set, falling back to Gemini API');
+    // If no DeepSeek API key AND we are local, fallback to Gemini
+    // In production, we assume the server has the key
+    if (!apiKey && window.location.hostname === 'localhost') {
+        console.warn('DEEPSEEK_API_KEY not set locally, falling back to Gemini API');
         throw new Error('DEEPSEEK_API_KEY_NOT_SET');
     }
 
@@ -56,13 +57,23 @@ const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: b
         requestBody.response_format = { type: 'json_object' };
     }
 
+    const isLocal = window.location.hostname === 'localhost';
+    const apiUrl = isLocal ? DEEPSEEK_API_URL : '/api/deepseek';
+
     try {
-        const response = await fetch(DEEPSEEK_API_URL, {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        // Only add Authorization header if calling direct URL (local dev)
+        // Production proxy /api/deepseek adds the key securely on the server
+        if (isLocal && apiKey) {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-            },
+            headers,
             body: JSON.stringify(requestBody),
         });
 
@@ -75,7 +86,7 @@ const callDeepSeek = async (prompt: string, systemPrompt?: string, expectJSON: b
         return data.choices[0].message.content || '';
     } catch (error: any) {
         console.error('DeepSeek call failed:', error);
-        // If it's a browser fetch error (e.g. CORS), identify it so we can fallback
+        // If fetch fails (CORS locally or network error), identify it for fallback
         if (error.name === 'TypeError' || error.message.includes('fetch')) {
             throw new Error('DEEPSEEK_NETWORK_ERROR');
         }
@@ -302,11 +313,16 @@ export const getWritingFeedback = async (promptText: string, userText: string, l
         Consigne: "${promptText}"
         Texte de l'étudiant: "${userText}"
         
-        Fournissez un feedback constructif en ${language} incluant:
-        1. Une appréciation globale.
-        2. Les points forts (vocabulaire, grammaire).
-        3. Les points à améliorer.
-        4. Une proposition de correction pour les erreurs majeures.
+        Fournissez un feedback constructif en ${language} selon cette STRUCTURE STRICTE :
+        ## 1. Appréciation globale
+        (Une phrase sur la qualité générale)
+        
+        ## 2. Identification des erreurs
+        (Listez les erreurs spécifiques trouvées : grammaire, conjugaison, vocabulaire, orthographe. Pour chaque erreur, citez le passage original entre guillemets et expliquez la correction).
+        
+        ## 3. Proposition de correction complète
+        (Réécrivez l'INTÉGRALITÉ du texte de l'étudiant de manière correcte et naturelle pour un niveau B1).
+        
         Utilisez le Markdown pour la mise en forme (##, *, **).`;
 
         return await callDeepSeek(prompt);
