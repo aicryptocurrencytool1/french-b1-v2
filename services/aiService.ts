@@ -139,15 +139,17 @@ export const getGrammarExplanation = async (topicTitle: string, language: Langua
 Provide the explanation in ${language} language.
 ${userContext}
 
-**PEDAGOGICAL STYLE (ULTRA-SIMPLE):**
+**PEDAGOGICAL STYLE (DEEP DIVE & SIMPLE):**
 - Persona: A friendly, slightly funny French coach.
-- Tone: Extremely simple language, no academic jargon.
+- Tone: Extremely simple language, no academic jargon, but **DETAILED**.
 - Metaphors: Essential! (e.g., "The Subjunctive is for when you're feeling 'weird', not for facts").
 - Sections:
-  1. **Son Job (Its Job):** 1-2 simple sentences on why this exists.
+  1. **Son Job (Its Job):** Provide a **LONG**, detailed explanation (2-3 paragraphs) on why this exists and when to use it.
   2. **The Metaphor:** A funny or relatable way to remember it.
-  3. **Dans la vraie vie (In real life):** 2 examples using Ahmad's life in **Liège** or memories of **Lebanon**.
-  4. **The "Secret Trick":** A simple rule of thumb for dummies.
+  3. **Dans ma vraie vie (In my real life):** Provide **at least 4 detailed examples**. 
+     **CRITICAL RULE:** All examples MUST use the first person **"je"** (I). Ahmad must be the protagonist.
+     Use Ahmad's life in **Liège** or memories of **Libanon**.
+  4. **The "Secret Trick":** A simple, clever rule of thumb for dummies.
 
 **FORMATTING RULES:**
 - Use ## for main headings.
@@ -199,19 +201,15 @@ Return ONLY a valid JSON object with this exact structure:
 
 export const getQuiz = async (topicTitle: string, language: Language): Promise<QuizQuestion[]> => {
     try {
-        const systemPrompt = "You are an expert French grammar teacher. Accuracy is your top priority.";
         const userContext = getUserContext();
-        const prompt = `Generate exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}" for a student named Ahmad.
+        const promptText = `Generate exactly 10 multiple-choice questions for the French B1 grammar topic: "${topicTitle}" for a student named Ahmad.
         ${userContext}
-        
-        **CONTENT STRATEGY:**
-        - Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon** for the context.
-        
+        **CONTENT STRATEGY:** Use Ahmad's life in **Liège (Citadelle)** and his memories of **Lebanon**.
         **CRITICAL RULES:**
-        1. **Auxiliary Verbs:** Ensure correct auxiliary (être/avoir) for compound tenses.
-        2. **Logic:** The correct answer MUST be grammatically perfect.
-        
-        Return ONLY a valid JSON object with the structure:
+        1. **Auxiliary Verbs:** Use correct être/avoir in compound tenses.
+        2. **Logic:** The correct answer MUST be perfectly correct.
+        3. **Protagonist:** Use "je" frequently where appropriate.
+        Return ONLY a valid JSON object with structure: 
         {
           "questions": [
             {
@@ -223,9 +221,16 @@ export const getQuiz = async (topicTitle: string, language: Language): Promise<Q
           ]
         }`;
 
-        const response = await callDeepSeek(prompt, systemPrompt, true);
+        const response = await callDeepSeek(promptText, undefined, true);
         const parsed = parseJSON<{ questions: QuizQuestion[] }>(response);
-        return parsed.questions || [];
+
+        // Final sanity check: ensure correctAnswerIndex is a number
+        const questions = (parsed.questions || []).map(q => ({
+            ...q,
+            correctAnswerIndex: Number(q.correctAnswerIndex)
+        }));
+
+        return questions;
     } catch (error: any) {
         console.warn("DeepSeek quiz generation failed, falling back to Gemini:", error);
         return await geminiService.getQuiz(topicTitle, language);

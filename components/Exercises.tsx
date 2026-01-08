@@ -18,6 +18,7 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
   const [score, setScore] = useState(0);
   const [isQuizCompleted, setIsQuizCompleted] = useState(false);
   const { t } = useTranslation(language);
+  const [error, setError] = useState<string | null>(null);
 
   const startQuiz = async (topic: Topic) => {
     setSelectedTopic(topic);
@@ -27,16 +28,17 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setQuestions([]);
+    setError(null);
 
     try {
       const quizData = await getQuiz(topic.title, language);
       if (!quizData || quizData.length === 0) {
-        throw new Error("Empty quiz data");
+        throw new Error("No quiz data returned from AI");
       }
       setQuestions(quizData);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load quiz:", err);
-      setQuestions([]); // This will trigger the empty/error state
+      setError(err.message || "Failed to load quiz. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -45,7 +47,7 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
   const handleAnswer = (index: number) => {
     if (selectedAnswer !== null) return; // Prevent double selecting
     setSelectedAnswer(index);
-    if (index === questions[currentQuestionIndex].correctAnswerIndex) {
+    if (Number(index) === Number(questions[currentQuestionIndex].correctAnswerIndex)) {
       setScore(s => s + 1);
     }
   };
@@ -62,6 +64,7 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
   const reset = () => {
     setSelectedTopic(null);
     setQuestions([]);
+    setError(null);
   };
 
   if (!selectedTopic) {
@@ -92,6 +95,32 @@ const Exercises: React.FC<ExercisesProps> = ({ language }) => {
       <div className="h-full flex flex-col items-center justify-center space-y-4">
         <Loader2 className="animate-spin text-blue-500" size={48} />
         <p className="text-slate-500">{t('exercises.loading', { topic: selectedTopic.title })}</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-3xl shadow-xl p-8 text-center border border-red-100 max-w-lg mx-auto mt-20">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500 mb-4">
+          <XCircle size={32} />
+        </div>
+        <h3 className="text-xl font-bold text-slate-800">Quiz Generation Failed</h3>
+        <p className="text-red-500 mt-2 mb-6">{error}</p>
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={reset}
+            className="px-6 py-3 text-slate-500 font-bold hover:text-slate-700 transition-all"
+          >
+            {t('exercises.goBack')}
+          </button>
+          <button
+            onClick={() => startQuiz(selectedTopic)}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2"
+          >
+            <RefreshCcw size={18} /> {t('exercises.tryAnother')}
+          </button>
+        </div>
       </div>
     );
   }

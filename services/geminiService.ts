@@ -13,15 +13,28 @@ const parseGeminiJson = <T>(text: string | undefined): T => {
         throw new Error("No text returned from API");
     }
     let cleanedText = text.trim();
+
+    // 1. Try to extract from markdown block
     const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```/;
     const match = cleanedText.match(jsonBlockRegex);
-
     if (match && match[1]) {
         cleanedText = match[1];
+    } else {
+        // 2. Fallback: Extract between first { and last }
+        const firstBrace = cleanedText.indexOf('{');
+        const lastBrace = cleanedText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+        }
     }
 
-    cleanedText = cleanedText.trim();
-    return JSON.parse(cleanedText) as T;
+    try {
+        cleanedText = cleanedText.trim();
+        return JSON.parse(cleanedText) as T;
+    } catch (e) {
+        console.error("Gemini JSON Parse Error. Cleaned text:", cleanedText);
+        throw e;
+    }
 };
 
 function decode(base64: string) {
@@ -123,11 +136,11 @@ export const getGrammarExplanation = async (topicTitle: string, language: Langua
             role: "user", parts: [{
                 text: `Explain French B1 grammar: "${topicTitle}" for Ahmad in ${language}.
         ${context}
-        STYLE (ULTRA-SIMPLE): Persona: Friendly funny coach. Simple tone. Clear metaphor (e.g. Action Star for PC).
+        STYLE (DEEP DIVE & SIMPLE): Persona: Friendly funny coach. Detailed tone. Clear metaphor.
         Structure: 
-        ## 1. Son Job (Its Job)
+        ## 1. Son Job (Its Job) -> LONG detailed explanation (2-3 paragraphs).
         ## 2. The Metaphor
-        ## 3. Dans la vraie vie (In real life - Liège/Lebanon examples)
+        ## 3. Dans ma vraie vie (At least 4 examples using **JE** only - Liège/Lebanon context)
         ## 4. The Secret Trick (Rule of thumb).
         Use **bold** for French words.` }]
         }],
